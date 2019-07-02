@@ -1,0 +1,202 @@
+런타임
+
+
+server
+
+# firewall-cmd --add-service http
+# firewall-cmd --add-service http --permanent
+# firewall-cmd --add-port=8080/tcp
+# chron -t default_t a.html
+# chron -t httpd_sys_content_t a.html
+
+desktop
+# curl 10.0.2.20/a.html
+
+curl : 특정 url을 지정했을때 해당되는 내용이 나온다.
+
+getenforce
+
+permissive : 정책을 위반 했을 때 위반 내용을 경고만 한다 (로그로 남긴다 / 차단안함)
+enforcing :  차단을 하고 그 로그를 남긴다.
+
+http 상태코드
+100번대
+200번대 	/	정상적인 상태
+300번대		/	문법이 잘못되었거나 요청을 처리할 수 없다. 접근 할 수 없다.
+400번대
+500번대 
+
+https://ko.wikipedia.org/wiki/HTTP_%EC%83%81%ED%83%9C_%EC%BD%94%EB%93%9C
+
+상위 레이블 컨텍스트 디렉토리에 파일이 생성이 되면 해당되는 레이블을 상속을한다.
+
+ps -ef 첫 번째로 나오는건 프로세스를 실행하는 사용자, PID, 1번프로세스 systemd
+
+웹이 작동을 하는 프로세스는 아파치이다. / 아파치가 응답을 해준다.
+아파치의 소유자가 접근을 한다.
+
+프로세스를 실행할 때는 rw 권한을 갖는다.
+
+명령어를 쳤을 때 의미에 대해서 기억을 하고 있어야한다. pid, 소유자 등..
+
+모든 서비스는 이렇게 작동을 한다.
+dns, web service, 방화벽
+프로세스가 어떤 파일에 접근을 하는데 selinux와 퍼미션에 제어를 받게된다.
+selinux를 제어를 하게되면 퍼미션 제어를 받는다.
+퍼미션 이전에 적용 받는건 레이블이다.
+시스템 서비스의 개념이다. 단순하게 vi edit , cat 프로세스가 파일에 접근할 때 접근제어를 한다.
+
+restorecon : 원래대로 chcon을 복구한다.
+semanage fcontext -l 
+
+/var/www(/.*)? 메타 캐릭터
+/var/www/어떤 파일이든 이라는 의미	/  *는 앞에 있는 글자가 없는거까지, 있는것도 포함.
+
+/srv 서비스용으로 사용할 디렉토리, 리눅스마다 있을수도 있고 없을수도 있다.
+
+/etc/httpd/conf/httpd.conf
+파일 수정 전에는 .bak로 하나 더 만들어서 백업을 만들자.
+
+설정 파일 변경사항을 확인할 때 diff 를 쓴다.
+chcon으로 바꾼건 임시로 바꾼거지 restorecon하는 순간 돌아간다.
+
+cd /etc/httpd/conf.d/
+
+/home/user/public_html = http://x.x.x.x/~user/
+/home/ab/public_html
+
+httpd가 접근을 해야한다. - apache
+711 권한 (cd로 넘어갈수만 있게 해준다) 그래야지만 apache가 접근할 수 있다.
+중간에 권한이 없으면 통과를 못한다. - 최소한의 권한.
+
+curl http://10.0.2.20/~user
+
+server
+/hoem/user
+mkdir public_html
+
+ll -dZ public_html
+semange fcontext -l | grep public_html
+echo "hello user home dir" > public_html/a.html
+
+selinux 부울
+getsebool -a | grep homedir
+setsebool httpd enalbe homedirs on
+
+setsebool -P httpd_enalbe_homedirs on (-P 영구적)
+
+semange boolean -l (리스트)
+
+해답지
+su - tt
+pwd
+mkdir public_html
+ll -
+chmod 711 tt
+
+LISTEN     0      128         :::80                      :::*                 
+::는 모든 아이피를 의미한다.
+
+별도로 설정하지 않으면 기본적으로 모든 인터페이스에 서비스하는게 기본이다.
+http-alt - 8080 대체 포트	/	
+
+시스템포트 0~1023 [관리자만 사용이 가능하다]	/	8080 일반 사용자도 사용이 가능한 포트
+8088 포트 , 포트를 바인딩한다. 프로세스와 포트가 바인딩 해야한다. (포트 바인드, 바인드 포트)
+
+웹 할때 8080 포트를 많이쓴다.
+물리적, 논리적으로 방화벽 조건에 의해서 막을 수 있지만, 공격이란건 어떻게 들어올지 모른다.
+중요한건 포트를 잘 알려지지 않은 비표준포트로 서비스 하는 경우도 상당히 많다.	/	보안때문에
+
+reload, restart 할 때 오류가 나온다면 오타가 친거다.
+journalctl (오류 체크)
+
+semanage port -l | grep httpd
+semanage port -a -t http_port_t -p tcp 8088
+
+ss -tnlp | grep ssh
+ssh server -p 2022	(포트로 접속할 때)
+
+
+selinux는
+mac 목적이 강하다.	/	주체가 객체에 접근을 할 때 lavel 등급이 존재한다.
+
+
+httpd는 무조건 root가 실행했었다.
+실제로 루트는 퍼미션을 제어받지 않는데 프로세스를 통하면 모든 파일에 접근이 가능하다.
+/var/www/html	|    /etc/http/...
+어떤 소프트웨어든 완벽한 소프트웨어는없다
+소프트웨어를 만들다보면 오류, 어쩔 수 없는 보안에 결함이 있을 수 있다.
+dac기법에서는 막을 방법이 없다.
+
+루트 권한을 취득하더라도 레이블을 이용해서 접근을 막을 수 있다.
+이것을 하기 위해서 만든게 selinux이다.
+
+selinux도 취약점이 있을 수 있고 취약점을 통해서 접근 할 수 있다.. 하지만 안하는거 보다 낫지 않나.
+
+selinux가 활성화가 되지 않은 경우.
+구성을 변경하더라도 구성 변경한게 적용이 된다. 이유를 제대로 알 수 없다.
+로그에 systemctl 퍼미션 디나이 등 나오지 않으면 알 수 없다.
+그럴 때 어떻게 해결 해야하나?? ->  그걸 위한 도구가 있다.
+
+문제 해결 순서
+1. 인포싱 모드라면 퍼미시드 모드로 전환 (해당 되는 서비스를 실행 했을 때 문제가 없다는걸 확인해야함)
+- 그래도 안된다면 SELinux와 아무 문제가 없다.
+
+2. 해당 프로세스가 접근하는 파일에 레이블, 포트에 대한 레이블, 부울 확인.
+
+3. 모든 거의 대부분 로그는 /var/log/message (시스템에 가장 기본적인 시스템로그 syslog에 의한 전체적인 로그를 기록한다.	/	정책 위반은 message, AVC(access Vetor Cache /var/log/audit/audit.log
+audit에 정책 위반을 담는다
+
+acount : 회계, 감사추적
+
+차단 메시지가 audit에 나온다 message보다 더 자세하게 담는다.
+
+DNS
+DNS가 없으면 인터넷을 하지 못한다. 목적은 IP를 FQDN으로 바꿔주는것, FQDN을 IP로 바꿔주는것 (도메인을 아이피로 바꿔준다)
+
+DNS는 비교적 최근에 나왔다. 처음부터 DNS가 있었던것은 아니다. 처음엔 /etc/hosts가 있었다.
+대부분의 unix 계열은 /etc밑에 있다. 윈도우는 c드라이브 밑에 windwos밑에 system32밑에 drivers 밑에 etc에 hosts에 존재한다.
+
+잘 안쓴다. / 쓰기는 한다.
+왼쪽은 ip, 오른쪽은 fqdn 이 파일은 dns가 있기 전 인터넷이 처음 있었을 때 부터있다.
+
+arpa, 
+
+
+darpa(defemse advanced research projects agency) :
+미군에 방어에 관련된 영구를 하는 기관, arpanet 인터넷을 제일 처음 만들었다.
+최초로 구현한 네트워크, 네트워크란 의미로 많이 쓰임.
+유닉스를 만든 시스템이 pdp7 이다.
+
+hosts
+지금 현재 dns가 있지만, 시스템에서 호스트 주소를 물어볼 때 dns보다 hosts한테 먼저 물어본다.
+악성코드가 hosts를 감염시키는 경우가 많다. 우선순위가 높기 때문에.
+
+명령어가 크게 3가지가 있는데,
+host
+nslookup
+dig
+
+dns한테 쿼리를 날려서 응답을 받는 방식
+
+dns query : FQDN?
+쿼리를 받으면 응답을 준다. : IP
+
+
+
+
+DNS Querry
+	- 제귀
+	- 순환
+
+DNS Respanse /Answer
+	- 권한 있는 응답
+	- 권한이 없는 응답
+
+authority는 권한이 있는 응답이다.
+
+DNS 계층 구조
+	Root Hint
+	DNS Record Type
+
+위주로 공부를 해보세요.
