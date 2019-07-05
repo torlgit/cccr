@@ -1,0 +1,63 @@
+Domain: abc.com
+
+<VM1>
+hostname: server1 | ipa | ns1 
+NIC
+	1: nat network
+	2: nat network  (teaming: runner=activebackup) 10.0.2.10
+	3: host-only	192.168.56.10
+역할: FreeIPA 서버, DNS Master
+IPA: ldapuser01 사용자 생성
+DNS: abc.com 도메인의 정방향 조회 / 알림 / 영역 전파
+SWAP: 1G 스왑 영구 추가
+
+<VM2>
+hostname: server2 | ns2 | www
+NIC
+	1: nat network
+	2: nat network  (teaming: runner=activebackup) 10.0.2.11
+	3: host-only    192.168.56.11
+역할: DNS Slave | 웹 서버 | DHCP 서버
+DNS: abc.com 도메인의 정방향 조회 동기화
+WEB: index.html "hello abc.com world" 출력
+DHCP: 10.0.2.0/24 네트워크만 IP 임대, 범위 100~200, VM3는 110 예약, DDNS 구성
+Disk: LVM, VG:wdata, LV:wcontent, XFS 1GB, /var/www/html 영구 마운트
+
+<VM3>
+hostname: client
+NIC
+	1: nat network  10.0.56.110
+	2: host-only	192.168.56.110
+IPA Client 구성
+ldapuser01 로그인
+
+VM3 -> VM1(server1.abc.com, server2.abc.com) SSH 키 인증
+
+vm 1 nat 세팅, 2 nat 세팅 / 1 dns 8.8.8.8 / 수정필요
+dns -> dhcp 순서로 일단 진행.
+
+
+vm1
+bind, ipa-server ipa-server-dns bind
+
+fdisk swap
+mkswap
+fstab swap swap default 0 0
+swapon -s
+mount -a
+swapon /dev/sdb1
+
+ipa 할 때 hosts를 localhost로 하고 설치 진행.
+
+vi etc/named.conf
+
+
+vm2
+bind httpd dhcp
+
+
+
+vm3
+
+host 이름만 쳐도 
+
