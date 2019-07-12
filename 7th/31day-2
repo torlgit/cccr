@@ -1,0 +1,99 @@
+1. 각 각 server의 인터페이스 설정
+
+<server 1>
+hostname server1.xyz.local
+nmcli 인터페이스 구성 [ ip(10.0.2.250/24), dns(8.8.8.8), gw(10.0.2.1) | teaming : activebackup ]
+mgmt 구성 (192.168.56.250/24)
+
+yum -y install (dns, dhcp)
+
+<server 2>
+hostname server2.xyz.local
+nmcli 인터페이스 구성 [ ip(10.0.2.251/24), dns(8.8.8.8), gw(10.0.2.1) | teaming : activebackup ]
+mgmt 구성 (192.168.56.251/24)
+
+yum -y install (dns, dhcp)
+
+<storage>
+
+1gb disk 6개 추가
+storage.xyz.local
+nmcli 인터페이스 구성 [ ip(10.0.2.240/24), dns(8.8.8.8), gw(10.0.2.1) | teaming : activebackup ]
+mgmt 구성 (192.168.56.240/24)
+
+<client>
+
+client.xyz.local
+nmcli 인터페이스 구성 [ ip(auto) ]
+mgmt 구성 (192.168.56.10)
+
+2. storage 구성
+
+<storage>
+
+/dev/sda~
+iscsi target [fileio Disk 6 (/block/disk1~6)]
+	TPG1= IQN(iqn.xxx:storage1) LUN:disk1/disk2/disk3 ACL:server1
+	TPG2= IQN(iqn.xxx:storage2) LUN:disk4/disk5/disk6 ACL:server2
+
+100mb size < 6개 생성
+
+nfs export
+	sdc 1G /share/webdata (only server1,server2 mount, rw) 구성
+
+smb share
+	sdd 1G /share/sharedocs (Share Name:docs) (wheel group rw)
+	SMB User: smbuser
+
+SWAP	sdb 1G
+
+3. dns, dhcp 구성 (server1, server2)
+<server 1>
+
+DNS MASTER
+	Forward Lookup, Reverse Loopup(only 10.0.2.0/24)
+
+DHCP
+	Range:10.0.2.101~120
+
+<server 2>
+
+DNS SLAVE
+DHCP
+	Range:10.0.2.121~140
+
+4. WEB, NFS MOUNT, iSCSI Connect
+
+<server 1>
+
+WEB
+	DocumentRoot:/srv/www, Contents:index.html(hello abc.local world)
+NFS MOUNT
+	storage:/share/webdata --> /srv/www
+iSCSI Connect
+	sdb/sdc/sdd --lvm--> 3way Mirror lv --xfs--> /var/named
+
+<server 2>
+
+WEB
+	DocumentRoot:/srv/www, Contents:index.html(hello abc.local world)
+iSCSI Connect
+	sdb/sdc/sdd --lvm--> 3way Mirror lv --xfs--> /var/named
+NFS MOUNT
+	storage:/share/webdata --> /srv/www
+
+client 구성, SMB, SSH
+
+<client>
+Hostname: client
+NIC
+	1/2 teaming:activebackup con-name:external ip:DHCP
+	3   con-name:mgmt ip:192.168.56.10
+SMB MOUNT
+	//storage/docs --autofs--> /mnt/docs (CAN write wheel group)
+SSH Key Auth
+	user --key-auth-> server1, server2, storage
+
+구성의 목표
+dhcp, dns 이중화 | iscsi, nfs, smb를 이용한 스토리지 구성 | ssh 연결 구성 | Web 구성
+

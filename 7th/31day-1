@@ -1,0 +1,74 @@
+file io disk 6개
+tpg 다르게 2개 구성 (iqn 2개를 갖고 있다)
+tpg 1 3
+tpg 2 3
+
+dns, dhcp 구성 << 1순위
+저장장치 << 2순위
+
+(dhcp 이중화)	/	Range 범위를 분리	| 이중화 하는 방법 (구성)
+
+서버 1 이든 2든 죽어도 아무 문제 없어야한다. 다 이중화로 되었기 때문에.
+
+
+Domain: abc.local
+NTP Syncronization
+
+<server1>
+Hostname: server1(www,ns1)
+NIC
+	1/2 teaming:activebackup con-name:external ip:10.0.2.250/24
+	3   con-name:mgmt ip:192.168.56.250/24
+DNS MASTER
+	Forward Lookup, Reverse Loopup(only 10.0.2.0/24)
+DHCP
+	Range:10.0.2.101~120
+WEB
+	DocumentRoot:/srv/www, Contents:index.html(hello abc.local world)
+NFS MOUNT
+	storage:/share/webdata --> /srv/www
+iSCSI Connect
+	sdb/sdc/sdd --lvm--> 3way Mirror lv --xfs--> /var/named
+	
+<server2>
+Hostname: server2(www,ns2)
+NIC
+	1/2 teaming:activebackup con-name:external ip:10.0.2.251/24
+	3   con-name:mgmt ip:192.168.56.251/24
+DNS SLAVE
+DHCP
+	Range:10.0.2.121~140
+WEB
+	DocumentRoot:/srv/www, Contents:index.html(hello abc.local world)
+iSCSI Connect
+	sdb/sdc/sdd --lvm--> 3way Mirror lv --xfs--> /var/named
+NFS MOUNT
+	storage:/share/webdata --> /srv/www
+
+<storage>
+Hostname: storage
+NIC
+	1/2 teaming:activebackup con-name:external ip:10.0.2.240/24
+	3   con-name:mgmt ip:192.168.56.240
+iSCSI Target
+	fileio Disk 6 (/block/disk1~6)
+	TPG1= IQN(iqn.xxx:storage1) LUN:disk1/disk2/disk3 ACL:server1
+	TPG2= IQN(iqn.xxx:storage2) LUN:disk4/disk5/disk6 ACL:server2
+NFS EXPORT
+	sdc 1G /share/webdata (only server1,server2 mount, rw)
+SMB SHARE
+	sdd 1G /share/sharedocs (Share Name:docs) (wheel group rw)
+	SMB User: smbuser
+SWAP	sdb 1G
+
+<client>
+Hostname: client
+NIC
+	1/2 teaming:activebackup con-name:external ip:DHCP
+	3   con-name:mgmt ip:192.168.56.10
+SMB MOUNT
+	//storage/docs --autofs--> /mnt/docs (CAN write wheel group)
+SSH Key Auth
+	user --key-auth-> server1, server2, storage
+
+
