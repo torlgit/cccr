@@ -1,0 +1,112 @@
+1. 루트 패스워드 변경
+mount -o remount,rw /sysroot
+chroot /sysroot
+passwd root
+touch /.autorelabel
+
+2. 네트워크 설정
+nmcli  | nmtui 설정
+hostnamectl set- hostname server1.example.com
+
+/etc/init.d/network restart
+nmtui
+ vi /etc/sysconfig/network-scripts/
+ vi /etc/sysconfig/network-scripts/ifcf -> 설정들어가서 바꾸면 된다.
+BOOTPROTO=”static”
+ONBOOT=yes     //시작할 때 실행하겠다.
+IPADDR=192.168.x.x
+    GATEWAY=    //static 할 때 지정 필수 안하면 못찾아나감
+    DNS1=
+
+네트워크 세팅할 때 안되면 나트 네트워크로 설정하자 !
+
+3. SELinux 세팅
+getenforce
+setenforce 0 -> permissive
+setenforde 1 -> enforcing
+vi /etc/selinux/config
+SELINUX=enforcing -> wq
+
+
+4. 파티션
+논리볼륨 생성
+스왑파티션 추가
+볼륨 크기 변경
+
+5. 사용자 계정을 생성하십시오
+- chelsea라는 이름의 그룹
+- chelsea 에 2차 그룹으로 속해있는 drogba, lampard 사용자 계정
+- 시스템에 대화식 쉘에 대해서 접근할 권한을 갖고 있지 않고,
+- chelsa 의 구성원이 아닌 hazard 사용자 계정
+- drogba 와 lampard, hazard는 모두 london이라는 패스워드를 가지고 있어야합니다.
+
+사용자 계정 구성
+2001인 userid 를 갖는 사용자 계정 kante 를 생성하십시오.
+이 사용자 계정의 암호는 반드시chelsea 이어야 합니다.
+useradd -u // uid 변경 옵션
+
+/var/tmp/fstab 파일의 접근 권한을 구성하십시오.
+/etc/fstab 파일을 /var/tmp/fstab로 복사하십시오.
+/var/tmp/fstab 아래와 같이되는 권한을 갖도로 설정하십시오.
+ - /var/tmp/fstab 파일은 root 사용자가 소유합니다.
+ - /var/tmp/fstab 파일은 root 그룹이 소유합니다.
+ - /var/tmp/fstab 파일은 누구도 실행할 수 없습니다. (원래 기본적으로 파일에 실행권한)
+drogba 사용자는 /var/tmp/fstab 파일을 읽고 쓸 수 있습니다.
+	getfacl fstab
+	setfacl -m u:drogba:6 fstab
+lampard 사용자는 /var/tmp/fstab파일을 쓸 수도 없고 읽을 수도 없습니다.
+	getfacl fstab
+	setfacl -m u:lampard:0 fstab
+(현재 또는 미래의)다른 모든 사용자들은 /var/tmp/fstab 파일을 읽을 수 있습니다.
+
+7. cron 작업을 구성하십시오
+사용자 drogba 가 로컬시간 14:23 에 매일 실행하는 cron 작업을 구성하십시오.
+다음명령을 실행합니다.
+-/bin/echo hiya
+
+crontab -e ( 생성, crontab에 대한 내용 복습 필요 )  // -u drogba
+
+8. 협력작업을 위한 디렉토리를 만드십시오 다음과 같은 특징이 있는 협력작업을 위한 디렉토리
+/home/stamfordbridge 를 만드십시오
+/home/stamfordbridge 의 그룹 소유권은 chelsea 입니다.
+chelsea의 구성원들은 디렉토리를 read, write, 접근할 수 있어야 합니다. 하지만 나머지 사용자들은 권한이 없어야 합니다.	( root 사용자는 예외 )
+/home/stamfordbridge  에서 만들어지는 파일들은 자동적으로 chelsea 그룹의 소유권으로 설정되어야 합니다.
+
+chmod g+s ( 하위 생성 되는 디렉토리를 자동으로 해당 그룹 소유권으로 만들 수 있다 ) // 2770
+나머지는 getfacl, setfacl로 구성이 가능하다.
+
+9. 논리볼륨 크기 변경하기
+논리볼륨과 논리볼륨 파일시스템을 /dev/centos/myvol 300Mib로 변경하시오. 파일시스템의 내용은 변경되지 않은 채로 유지되어야 합니다.
+
+논리 볼륨 생성
+다음 요구사항을 따르는 새 논리 볼륨을 생성하십시오.
+	볼륨 그룹명 : datastore
+	볼륨 그룹 : extent size : 8 M
+	논리 볼륨 : extent 개수 : 50
+	파일시스템 : ext3
+	논리 볼륨 부트 시에 /mnt/database 에 자동 마운트
+
+스왑파티션 추가
+다음 요구사항에 따라 귀하의 시스템 추가
+스왑 파티션을 추가하십시오
+파티션은 크기가 512Mib 입니다.
+스왑 파티션은 시스템이 부팅할 때 자동으로 마운트되어야 합니다.
+귀하의 시스템에 이미 존재하는 스왑파티션을 지우거나 변경하지 마십시오.
+
+10. 문자열 찾기
+/etc/passwd 파일안에 root 문자열을 포함하고 있는 모든 줄을 찾으십시오.
+이줄들을 모두 올바른 순서로 /root/lines 파일안에 복사하여 넣으십시오. /root/lines 는 빈줄이 없어야 하고
+/etc/passwd 안에 있는 원본 줄들의 정확한 복사본이어야 합니다.
+
+grep root /etc/passwd > /root/lines
+cat /root/lines
+
+11. 아카이브 생성
+/usr/local 의 내용을 담고 있는 /root/archive.tar.bz2 라는 이름의 tar 아카이브를 만드시오.
+tar 아카이브는 반드시 bzip 으로 압축되어야 합니다.
+
+tar -jcvf /root/archive2.tar.bz2 /usr/local/
+cd /usr/local/
+tar -jcvf /root/archive2.tar.bz2 ./
+tar -jxvf /root/archive2.tar.bz2
+partprobe ( 파티션 갱신 )
