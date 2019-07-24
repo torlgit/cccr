@@ -1,0 +1,162 @@
+/var/www 웹 콘텐츠 위치
+/etc/httpd/conf 설정 파일 위치 (httpd.conf)
+/etc/httpd/conf.d 추가 설정 파일
+/etc/httpd/conf.modules.d 추가 프로그램 (php 등) 웹 어플리케이션 서버로 구성 // 추가 설정에 관련된 내용
+~~~.d 로 끝나는 파일은 추가 설정 파일이다.
+/usr/share/httpd 메뉴얼 페이지, 문서 등이 저장. index.html 전에 기본 콘텐츠가 배치되는 위치 (기본 콘텐츠가 없으면 노출 시킨다)
+
+<!-- --> // html에서 주석을 나타낸다.
+
+serverRoot "/etc/httpd"
+설정파일에 루트 디렉토리, /etc/httpd/conf, confd, modules.d가 있는 위치 *변경할 일이 없다*
+
+Listen 80
+
+Include conf.modules.d/*.conf
+바꿀 일은 없다. 추가 설정을 변경할 때 참조하는 위치를 바꿀 때
+
+user apache, group apache
+소유자와 소유그룹, 현재 사용자가 프로세스의 사용자인데, systemctl root만 가동할 수 있다. 프로세스 소유자가 root, 웹서버란건 불특정 다수에게 서비스 해주는 형태라서 공격도 많이 들어오고 취약점도 자주 발생한다.
+개발자의 실수, apache오류 등으로 취약점 발생
+기본적으로 웹 권한을 취득하더라도 apache 권한을 취득한다.
+
+serverAdmin root@localhost
+서버의 이메일을 적는 형식, 실제 이메일을 넣진 않는다.
+
+<Directory />
+프로세스가 접근할 수 있는 설정을 해준다. 접속할 수 있는 사용자를 정의해놓을 수 있다.
+접근제어, 추가구성에 대한 설정파일에 대한 설정
+.ht 라는 파일은 잘 안쓴다. (있어도 무시해라)
+
+Require all dened :
+루트 디렉토리는 아파치 프로세스가 접근할 수 없다.
+
+<DocumentRoot "/var/www"> :
+
+<Directory "/var/www">
+.ht file을 적용하지 마세요.
+Require all granted : 모두 다 접근이 가능하다는 의미.
+
+cgi-bin.html : .net, php, jsp 없었던 시절 cgi 형태 (C, peal, c#) 
+
+<Directory "/var/www/html"> :
+indexes : 디렉토리 리스팅을 사용 (디렉토리를 목록화해서 보여준다. 디렉토리의 파일을 외부로 제공해주는 기능)
+실제로 dynamic 콘텐츠가 있을 수 있는데, client한테 dynamic 콘텐츠 노출되면 안된다.
+로그인 로직, db 접속이 있을 수 있다. 절대로 켜져 있으면 안된다. (디렉토리 공유 목적이 아닐 시)
+
+기본적으로 검색엔진들은 봇이라고 하는 프로그램이 있다. 수집을 해서 데이터베이스에 저장을 해둔다. (합법임)
+robotstxt.org
+/var/www/html에 robots.txt (웹 표준)
+모든 검색엔진에게 /(루트)를 허용하지 않는다. http://www.cccr.net/ 에 대한 모든 내용을 검색엔진에게 허용하지 않게 하는 설정
+user-agent : *
+disallow : 디렉토리 지정. (특정 파일지정도 가능) // 이런 형식으로 쓰인다.
+
+ifmodule
+default content file, index.html로 되어있다. 기본 페이지를 지정하는 설정
+
+files
+모든 ht* denied.
+
+errorLog
+apache 오류 발생 시 어디에 남길건지 지정할 수 있다. (/var/log/httpd/error_log)
+
+accesss_log 접속 로그 언제, 응답이 제대로 됐는지. 정상적인 로그인은 access_log에 남게된다.
+웹 사이트
+
+loglevel
+로그의 레벨을 지정 (emerg, alert, crit, error, warn, notice, info, debug) 등
+
+logformat
+로그를 어떤식으로 남길지에 대한 형식 원하는 로그를 추가적으로 생성할 수 있다.
+
+addtype
+콘텐츠 형식, x-copress(잘 안쓰임), x-gzip 응답을 압축해서 보낼지 클라이언트가 요청할 경우 body를 압축해서 준다.
+
+AddDefaultCharset
+인코딩 방식을 어떻게 사용할건지 지정할 수 있다. (우리나라만 사용 가능한 형태로하면 외국에선 깨져서 보이게 된다)
+
+ErrorDocument
+에러가 발생했을 때 클라이언트한테 어떤 콘텐츠를 전송할건지
+
+보안적으로 생각을 하면 에러페이지로 클라이언트한테 너무 자세한 정보를 줄 필요가 없다.
+보통은 400~500번 오류는 동일한 페이지를 준다. 설명할 필요가 없다. 공격자 입장에서는 정보가 될 수 있기 때문에...
+
+설정마다 어떻게 작동하는지 작동방식에 대해서 자세하게 알아보고 설정을 해야한다. 어떤 역할을 하는지..
+
+가상호스트 설정
+모든 웹 서버가 기본적으로 가지고 있는 기능.
+두 개의 웹 사이트를 하나의 시스템에서 서로 다른 도메인 웹 서비스를 할 수 있다.
+
+버추얼 호스트는 민감하게 작동하기 때문에 순서가 중요하다. 맨 위에 있는게 먼저 실행된다.
+
+_default_ host
+보통 제일 뒤쪽에 한다.
+이름 기반이 아니기 때문에 DocumentRoot 밖에 없다.
+
+TLS,SSL | HTTPS | Body
+
+SSL (Secure Socker Layer) 
+1.x
+2.x 취약점
+3.x 심각한 취약점 발견
+
+인터넷 표준으로 TLS를 만들었음
+똑같은 헤더 구조에 + a 가 붙었다.
+1.2 를 사용
+클라이언트와 서버의 프로토콜의 버전이 같아야 한다.
+ssl 2.0, 3.0을 지원을 해야 사용할 수 있다. 웹 브라우저는 최신 버전만 사용을 해야한다.
+
+네이버, 다음
+ssl page 당 비용이 나오기 때문에 사이트 전체를 ssl을 적용해야 하기 때문에 가격이 비쌌었다.
+암호화, 복호화는 컴퓨터 성능이 좋아야 가능하다. = 결국은 비용의 문제
+
+hsts (HTTP Strict Tansport Secrity)
+          http
+C ----------------------> S http,https
+  <---------------------
+          https
+
+curl -k [옵션] https도 볼 수 있게 해준다.
+-k --insecure
+
+php, peal, python
+.net은 apache로 구현이 안된다.
+java 도 마찬가지 wildfly, nodejs (아파치와 다른 별도의 패키지가 필요로함)
+
+공통의 인터페이스를 제공한다해서 cgi - apache가 기본으로 제공한다.
+
+ScriptAlias /cgi-bin/ "/var/www/cgi-bin/"
+www.cccr.net/cgi-bin - url에 붙는 주소 (cgi-bin은 바꿀 수 있다)
+/var/www/cgi-bin/a.pl
+
+#! 파일형식을 지정하는게 실행을 줬을 때 실행을 할 수 있는 인터프린터를 지정한다.
+단순 커맨트의 목적만 있는건 아니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
