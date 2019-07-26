@@ -1,0 +1,76 @@
+haproxy 구성 방법
+
+global
+    log         127.0.0.1 local2
+
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000
+    user        haproxy
+    group       haproxy
+    daemon
+
+    stats socket /var/lib/haproxy/stats
+
+defaults
+    mode                    http
+    log                     global
+    option                  httplog
+    option                  dontlognull
+    option http-server-close
+    option forwardfor       except 127.0.0.0/8
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 10s
+    timeout check           10s
+    maxconn                 3000
+
+frontend  main *:80
+    acl url_static       path_beg       -i /static /images /javascript /stylesheets
+    acl url_static       path_end       -i .jpg .gif .png .css .js
+
+    default_backend             app
+
+backend app
+    balance  roundrobin
+    server   app1 192.168.122.10:80 check
+    server   app2 192.168.122.12:80 check
+
+
+
+frontend, backend가 중요하다.
+
+virsh net-list
+<XXX>virsh net-create --file kvm-network-create.xml<XXX>
+virsh net-define --file kvm-network-create.xml
+virsh net-start internal1
+virsh net-autostart internal1
+
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<network>
+<name>internal1</name>
+<bridge name="virbr1"/>
+<ip address="192.168.123.1" netmask="255.255.255.0">
+<dhcp>
+<range start="192.168.123.2" end="192.168.123.254"/>
+</dhcp>
+</ip>
+</network>
+
++ 워드프레스를 구성해서 web에 넣으세요.
+
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<network>
+<name>internal2</name>
+<bridge name="virbr2"/>
+<ip address="192.168.124.1" netmask="255.255.255.0">
+<dhcp>
+<range start="192.168.124.2" end="192.168.124.254"/>
+</dhcp>
+</ip>
+</network>
