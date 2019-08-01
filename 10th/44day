@@ -1,0 +1,97 @@
+가상머신 설정
+1. 네트워크 - kvm 2개
+2. CPU - v 가상화, 2 core
+3. 메모리 - 1. 8G 2. 4G
+
+네트워크 설정
+op-ex
+172.25.100.0/24
+forward _____
+
+eth1
+
+op-in
+192.168.56.0/24
+isolate
+
+ens9
+
+kvm 
+edit - connection details - virtual networks = virsh network add
+
+1. 파일복사 (192.168.0.1 쉘 스크립트)
+2. 네트워크 인터페이스 eth0 설정 지우기
+3. 네트워크 인터페이스 이름 확인 (ens9, eth1)
+4. 1번 스크립트 실행 (값을 2개 입력 해야된다)
+	./01. \ osp_pre_setting.sh.txt controller 10
+	./01. \ osp_pre_setting.sh.txt compute1 11
+root 권한 필요, 실행권한 필요 (퍼미션)
+
+network restart - 하나의 인터페이스에 두 개의 아이피가 잡힐 경우.
+networkmanger restart - xx nmcli가 먹히지 않아서 재실행. xx	// openstack 할 때 충돌날 수 있어서 꺼둔거다.
+
+5. 컨트롤만 스크립트 2번 실행
+	./02. osp_package_and_answers.sh
+root 권한 필요, 실행권한 필요 (퍼미션)
+
+packstack --answer-file=answers.txt (root home 실행)
+password 입력 - 루트 사용자
+
+스크립트 파일 실행하는 방법
+./ (파일의 실행권한이 있어야 가능)	,	sh
+
+systemctl restart network - 한 인터페이스에 2개의 아이피가 있을 경우 / or 설정 파일 수정.
+
+vi에서 특정단어 변경하기
+:%s/old/new/g
+old는 예전단어, new는 새 단어
+
+node를 각 각 하나씩 설치
+controller - 관리 node = 가상화의 engine과 유사
+compute - host node, 물리적인 자원을 제공하는 시스템 = 가상화의 hosted과 유사
+storage node - controller에 포함
+network node - controller에 포함
+
+01.osp ~~~ : 사전 설정 스크립트
+02.osp ~~~ : 오픈스텍을 설치할 때 사용할 구성 파일, anwser file 구성 / file option -> anwser.txt로 넣어준다.
+안에 있는 스크립트를 다 자동으로 입력해주고, 패스워드만 직접 입력했다.
+
+controller - openstack dashboard
+dashborad = id, pwd	admin	암호1.
+
+일반적인 사용자는 project tab에서 작업을 한다.
+관리자는 admin tab을 이용
+
+"인스턴스" -> "vm"
+
+내부
+
+외부
+
+프로젝트
+
+플레이버
+자원할당, 가상머신 cpu, memory, disk 등을 정해주는, 틀을 만들어주는 역할을한다.
+
+이미지
+내가 가상머신을 만들 때 필요한 부팅이 가능한 디스크파일, 이미지
+
+네트워크 
+	- 외부  openstaack 밖에서 접근할 경우(서비스 구성을 했을 때) 밖에서 사용할 네트워크를 만들어주는 것 router, gateway를 거쳐서 나간다. (라우터, ip) // 라우터도 직접 만들 예정, 플로팅 아이피 외부에서 접근 가능한 IP 가상머신에 직접 만드는 ip??
+	- 내부 : openstack 환경 안에서 통신을 하는 것
+
+키패어
+외부에서 접근 가능한 설정을 할 때 만들어주는 것
+접속할 때 사용할 키를 설정 (ssh)
+
+보안그룹
+openstack에서 방화벽 역할을 해준다. security group
+
+항상 필요한 기본설정,
+
+내부 네트워크 플레이버, 이미지
+외부, 키패어, 보안그룹 가상머신들중에서 외부에서 접근 가능한 인스턴스를 만들 때 추가적인 부분
+
+project -> vm, 가상머신의 집합 관리하는 그룹이라고 보면된다.
+
+kvm - qcow2 format
