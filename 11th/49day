@@ -1,0 +1,89 @@
+어제 배운 것 정리
+
+Project (=Tenant) 리소스를 분류하는 범위, 이미지, 네트워크, 라우트, 인스턴스, 블록등을 분류하는 범위
+사용자 입장에서 어떤 하나의 부서, team, 개인, 회사 전체가 사용할 수 있다.
+
+User 사용자는 반드시 하나의 프로젝트에 속해야한다. 어떤 권한을 갖을지에 대한 Role (역할)이 필요하다. (member/admin)
+admin은 project의 관리자가 아니다. 오픈스택의 전체의 관리자가 된다.
+모든 프로젝트가 보이고 삭제, 수정 관리가 가능하다.
+memeber는 project내에서 관리, 생성 등이 가능하다.
+
+Flaver (Instance size) vcpu, eme, disk (root, eperm(임시), swap)
+
+Network
+	External - admin tab, / network node(neutron) -> 물리 네트워크 / 인터넷
+	Internal - project tab
+	Subnet 여러 개가 있을 수 있지만 보통 하나에 하나의 서브넷이 있다. IP Range, DHCP ? , DNS, 라우팅 테이블
+External과 Internal을 연결하기 위해서는 Router가 필요.
+physical network exnet
+
+Security Group - default (기본으로 존재) 어떤 그룹을 만들든 New Egress Open / Ingress close
+
+Floating IP
+
+SSH Keypair 새로 만드는 방식, 기존에 갖고있는 걸 import (ssh key gen)
+ssh키는 키를 생성할 때 private키를 딱 한번만 받을 수 있다.
+
+Image -> sealing
+
+block, object storage, LB
+
+퍼블릭 클라우드는 웹 콘솔을 지원 안한다. => 보안상 위험, 오픈스택에서도 이 기능을 끌 수 있다.
+ssh 접속이 기본으로 되어있다. host이름과 인스턴스 이름이 동일하다. 인스턴스 이름으로 자동부여 해준다.
+
+openstack
+volumes = cinder -> controller에 있다.
+
+ssh -i qa-key.pem user@host(ip)
+
+신기하게 볼 목록 3가지
+
+공개 키가 자동으로 등록이 되었다.
+호스트 이름이 자동으로 등록 되었다.
+
+실링 작업에서 해줘야한다.
+
+
+remote security group를 세팅하면 remote ip prefix를 못 쓴다.
+둘 중에 하나만 사용이 가능
+
+instance
+
+Image
+minimum disk, minimum ram를 설정하면 flaver가 그 기준이 안되면 해당 flaver 사용이 안된다.
+
+클라우드는 로드밸런스를 인스턴스를 사용하지 않고 만들 수 있다.
+openstack에 load balancers가 있음. 사용하면된다.
+
+<Delete Resource>
+Instance
+Security Group
+Floating IP
+SSH Key
+Router
+Internal Net/Sub
+External Net/Sub
+Flavor
+User
+Project
+
+====================
+<Create Resource>
+External Net: external-network, Flat, extnet
+External Subnet: external-subnet, 10.1.1.0/24, DHCP X, 10.1.1.100~10.1.1.149, 8.8.8.8
+Project: qa-project
+User: qa-user
+
+Flavor: t1.tiny, vCPU:1, Mem: 256, Root: 1G, Ep: 1G, Swap: 0
+Security Group:
+	qa-ssh: Allow Ingress SSH
+	qa-ping: Allow Ingress ICMP
+SSH Keypair:
+	qa-key
+Internal Net: qa-network
+Internal Subnet: qa-subnet, 172.25.10.0/24, DHCP O, 172.25.10.100~172.25.10.149, 8.8.8.8
+Router: qa-router1
+Image: cirros
+Instance: qa-test-inst-1, qa-test-inst-2
+
+
