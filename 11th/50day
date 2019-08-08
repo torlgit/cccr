@@ -1,0 +1,87 @@
+openstack은 controller 부팅 후 compute (실제로는 controller는 종료하지 않는게 좋다)
+compute node가 켜지면 db, 등 controller 찾는다. openstack service를 찾음
+
+load average : 1분당, 5분당, 15분당
+시스템에 평균부하 (평균 로드 시간) - cpu의 사용량 / 프로세스 사용량
+cpu가 4개면 4.00 이 cpu를 100%를 사용하고 있는거다.
+
+lscpu - cpu 보는 명령어
+top - 정리 필요.
+uptime - 간단하게 cpu 사용량을 보는 명령어
+
+매 번 웹 서버를 올릴 때 centos image를 가지고 매 번 서비스 올리고 콘텐츠를 올리고 할거냐?
+하나는 웹 서버를 만들어둔 이미지를 생성하는것 (이미지를 만들 때 sealing을 해야함)
+두 번째 방법은 최초 인스턴스 배포 시 쉘 스크립트를 지정할 수 있다. (생성 시 최초 한번만 할 수 있다)
+
+인스턴스를 만들 때 configuration에서 sheell script를 지정
+예시
+#!/bin/bash
+yum -y install httpd
+systemctl start httpd
+systemctl enable httpd
+
+openstack userdata라고 한다.
+
+집에가면 aws 회원가입 + card 등록
+
+mariadb, mysql DB 이중화 방식이 10가지가 넘는다.
+Tip cinder (공유 x) block 장치라서..
+
+
+wordpress | was 2개 create , db
+
+https://mozi.tistory.com/197 db 이중화
+db가 master만 바라보게 되어있다.
+
+웹이 여러 대 배치, 분산 아키텍처 그 뒤에는 db가 이중화로 구성되어있다. 실제 형태
+DB 같은 경우에는 DB만 다른 분야라고 볼 수 있다.
+
+mysql -u root -e "명령어"
+
+sed 's/hello/merong/g' test.txt << stream editor (자동화에서 vi를 할 수 없으므로 사용)
+sed -i 's/hello/merong/g' test.txt
+s는 찾아서 바꿔라
+g 글로벌 << 파일 전체를 의미한다.
+파일전체에서 hello를 merong으로 바뀜.
+
+mysql -u root -pP@ssw0rd -e "select * from db.table"
+
+mysql -u root -p << password를 물어보세요. 라는 의미
+mysql -u root -p test = test라는 데이터베이스를 사용하겠습니다. 라는의미 = use test, db이름이다. password x
+mysql -u root test -e "show tables"
+
+/var/log/project이름으로 된 log가 있다.
+wget 대신 curl을 쓰면된다. (-o 옵션)
+오케스트레이션 맛보기
+
+heat 인스터스를 어떻게 만들건지에 대한 파일
+lunch stack file을 넣거나, URL, 직접 작성이 가능하다.
+맨 위에는 stack file
+아래 쪽은 heat.env file을 넣고 stack을 만들면 된다.
+
+stack의 이름, Rollback on fallure (문제가 생길 때 지우는 옵션)
+dev-user에 대한 password 입력
+
+아래쪽엔 heat.env에 대한 내용이 들어간다.
+
+자주 사용되는 형태를 stack file로 만들어놓고 필요한 구성을 env 에 저장해놓고 auto
+
+object store에 containers doker, kubernetes와는 관계없다.
+컨테이는 담는 그릇, 용기를 의마한다.
+
+dropbox, ndrive 파일 올리고 다운로드 받아서 쓸 수 있다.
+이러한 형태를 object store라고 할 수 있다.
+
+얘의 기능 중 하나는 container access (public / private<나혼자씀>) 체크로 public access도 가능하다.
+특정 사용자한테는 안되고 모두에게 공개된다. 주소를 알고 있다면..
+주소를 알고있다면 file에 접근, 다운로드가 가능하다.
+
+정적 콘텐츠를 올려놓으면 바로 접근이 가능하다. 간단한 웹을 구현이 가능하다.
+실제로 특정 사용자에게 접근하게끔은 가능하지만, horazon에 없을 뿐 실제 오픈스택 swift자체에 기능이 있다.
+openstack 에서 public 형태는 조심해야한다. 중요한 파일을 올리면 안된다. public형태는 공개되기때문에 항상 조심해야한다.
+
+command는 자동화 구성하는게 좋음. 사용자 입장이야 그래픽기반으로 하지만 관리기반은 그래픽을 필요로 하긴 하지만, 보통 관리할때 커맨드라던지 코드(heat)형태와 같은게 트랜드. 규모가 점점 커지면 클릭 클릭으로 감당이 안된다.
+
+
+
+
