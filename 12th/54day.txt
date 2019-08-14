@@ -1,0 +1,107 @@
+오늘 주제는 이미지.
+
+인스턴스를 생성 후 원하는 패키지를 설치 후 글래스,
+이미지를 만들 때 실링을 해줘야한다. (중요)
+실링이라는 개념을 빼면 간단하다. IOS CD Image 를 넣고 설치. 필요한 패키지들을 미리 설치
+service에 대한 enable (다음 부팅 시 작동 하기 위해서)
+/var/lib/libvirt/image << 에 image가 있는데, 실링 작업을 해야한다.
+
+log 들이 다른 시스템에 이어져서 사용되는데, 이렇게 되면 보안 상 문제가 생길 수 있고, log는 그 전에 정보가 자세하게 적혀 있는데, 이것도 보안 상 문제가 생길 수 있다.
+
+password를 지정하면 전부 다 같은 password를 갖게된다. image가 유출 되거나 공개를 하게 된다면 이것도 문제가 된다.
+
+실링이란건 hostname, 시스템 mac 주소, password 모든 정보를 삭제하는 과정이다.
+mac 주소를 읽어서 맥 주소를 책정 ifcfg안에 설정파일 맥 주소를 읽어서 원하는 맥을 우선순위를 둘 수 있다.
+
+https 에서 ssl key 같게 된다면.. 이것도 문제
+
+그래서 이러한 문제를 위해 초기화를 해야한다.
+
+옛날엔 노트북 운영체제 cd가 있었다. 그 cd를 넣고 운영체제를 설치를 했어야했다.
+아무리 메뉴얼이 잘 되어있더라도 지식이 없는 일반사람한테는 설치도 어려울 수 있다.
+
+지금은 한 대의 운영체제를 설치하고 필요한 프로그램을 설치 후 실링 작업을 한다. = 골든이미지 라고 한다.
+이 골든 이미지를 복사해서 전부 다 넣는 방식이다. = 노트북, 스마트폰 (초기화 작업)
+
+https://docs.openstack.org/image-guide/openstack-images.html
+
+cloud-init 
+아마존, 구글, MS의 이미지는 cloud-init 패키지가 있어야한다.
+얘는 뭘 하는 패키지냐하면, 
+1. 디스크 파티션 리사이즈 루트파티션 처음 부팅할 때 디스크 사이즈 조정을 한다. (flavor root size가 다르므로)
+aws에도 인스턴스에 따라 root disk 크기가 정해져있다. / 그에 맞춰 바꿔야한다.
+2. 하드코딩 맥 주소 삭제
+3. ssh 서비스를 작동 시킨다. (enable)
+4. 방화벽을 비활성화 시킨다. (disable) -> 기본적으로 방화벽이 존재할 수 있는데, 우리는 security group이라는 방화벽을 사용하고 있으므로 굳이 쓸 이유가 없다.
+5. ssh public key 접근을 가능하게 해준다. (ssh key gen, 기존 key import 등)
+6. 기타 메타 데이터, user-data 접근을 가능하게 해준다. (configlation에서 
+7. xen의 해당 사항이므로 우리와는 관계 없다.
+
+이것 말고도 사용자를 만들어준다던지, 패키지 설치라던지도 있지만 잘 사용하지 않고
+위 기능만을 이용해서 커스터마이징을 해준다.
+
+실링 작업을 할 때 맥주소를 제거를 해야한다. (하드 코딩 password를 프로그래밍을 하는데 중요한 정보, ip, password)
+그 반대는 소프트코딩 변수를 지정하고 참조 해오는 형태, 절대 하드 코딩을 하면 안된다.
+
+이미지를 만들 때 min-disk, min-ram을 설정하는데, 실제 이미지 사이즈를 보고 그 이미지 사이즈 이상으로 세팅해야한다. (min-ram은 작동이라는 상관없다. 운영체제 스펙의 최소 요구사항에 맞춰서 세팅)
+
+LVM은 되도록 사용하지 않는게 좋다. (os 설치 시)
+/etc/udev (user deivce의 약자) 리눅스 공부를 하다보면 자주 나오는 용어이다. 유저 스페이스, 디바이스
+
+간단하게 얘기하면, 옛날 리눅스 유닉스는 커널 디바이스를 사용했다. 커널이 장치를 생성하고 관리한다. 장치는 dev 밑에 있어야하고 그 설정 파일을 담당한다. 커널이 관리하는 디바이스는 dev가서 파일을 삭제하면 사용할 수 없다.
+지금은 해당사항이 없다. user device, 커널이 장치를 관리하느냐 사용자가 관리하느냐의 차이가 있다.
+사용자 디바이스, 커널이 직접 장치를 관리하는게 아니라 사용자 레벨에서 관리하는게 udev <<
+누가 좋고 나쁘냐에 대해서 없다. (커널과 연관성이 있다)
+
+모든 리눅스의 디바이스 관리는 udev이 한다.
+
+/etc/udev/rules.d/70-persistent-net.rules
+번호를 붙이는건 읽혀지는 순서, file 내용은 없다. (mac주소를 초기화 시켜준다 / 이 파일 안에 정보를 삭제해야함)
+
+/etc/sysconfig/network-scripts/ifcfg-eth0 
+
+.ssh/autorized_key 값을 보면 nova에 의해 ssh key가 생성
+
+/etc/cloud/cloud.cfg을 설정해 커스터마이징을 할 수 있다.
+
+openstack console
+GUI 환경에서 부팅이 되었는지, 완료 되었는지 Log 웹 콘솔을 이용해 볼 수 있었다.
+GUI가 없는 환경에서 openstack console log에서 볼 수 있다.
+마지막에 cloud-init finished이 되야 정상적으로 작동됐다고 볼 수 있다.
+
+169.254.0.0 link local
+ms에서는 dhcp를 못 받아올 때 사용하고 있다. link local l2 대역대에서 통신을 하기위해 미리 정해놓은 것
+openstack에서는 169.254.0.0 대역대가 만들어져있다.
+
+오픈스택이 제공해주는 메타 데이터
+curl http://169.254.169.254/2009-04-04/meta-data|hostname, 인스턴스 마다 다 다른정보를 받는다. 주소는 같음
+아마존, ms 다 똑같다.
+
+boot log = openstack console log
+
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 console=ttyS0,115200n8"
+
+grub2-mkconfig > /boot/grub2/grub.cfg
+ubuntu update-grub = centos sys-unconfig : 초기화
+
+호스트이름, IP 세팅 = .unconfigured
+
+ssh host key 삭제
+
+필요한 파일 70, 75 내용 비우거나 제거
+
+하드웨어 어드레스 (맥 주소 제거)
+로그 파일 /var/log 삭제
+systemctl status cloud-init (enable 시켜놔야한다)
+
+1. touch /.unconfigured
+2. rm -rf /etc/ssh/ssh_host_*
+3. rm -rf /etc/udev/rules.d/70-*
+
+인스턴스 명이 호스트 명이 되는지 , 로그인이 되는지, ip세팅이 제대로 이루어져 있는지 확인해야한다.
+
+qemu0img info os-centos-image.qcow2
+du -sh . (현재 디렉토리의 사이즈)
+qemu-img convert -O qcow2 -c centos-image.qcow2 centos-images.qcow2
+qemu-img resize --shrink centos-image.qcow2 2G
+
