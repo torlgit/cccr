@@ -1,0 +1,318 @@
+Cookie :
+쿠키와 세션은 클라이언트 측에 저장이되는데, 반은 맞고 반은 틀리다. (저장이 안되면 사용할 수 없음)
+SSL NETSCAPE = 쿠키도 이 회사에서 만들었다. TLS는 IETF 에서 만들었다.
+클라이언트에 저장하기 때문에 노출될 위험이 있다. 옛날 윈도우는 평문 저장을 해서 더욱 위험했다.
+
+서버측 입장에서 장점 :
+관련된 정보를 클라이언트가 처리한다. 클라이언트가 정보를 저장하기 때문에 저장된 정보를 서버측에 인증을 받으면 요청할 수 있다. 만료기간을 줄수도 있다. 
+서버측에서는 직접 처리하지 않기 때문에 부하가 적어서 좋다. 보안적으로 아주 위험한 형태이다.
+
+Session : 
+그래서 나온게 세션 기본적으로 구조는 똑같다.
+서버가 인증 요청을 하게 된다면, session id를 생성을 해서 서버측에도 저장하고 쿠키에도 붙여서 보내준다.
+session id는 cookie file에도 저장이 될까? -> 아니다. web browser process (Ram) 메모리에 저장된다.
+인증을 받은 경우 session id 값을 쿠키에 삽입을 해서 보내준다. (set-cookie)
+
+sessoin id 값을 탈취 했다면 그 정보를 인증에 사용할 수 있다. 쿠키는 파일로 저장되기 때문에 노출이 되기 쉽다.
+세션은 패킷을 캡처 해야지만 알 수 있는 형태. 통신 과정에서 탈취를 해야한다. (https로 암호화 되어있으면 방법이 없다)
+
+cookie만 사용한다면 https로 암호화를 해도 file로 저장하기 때문에 위험하다.
+
+그러면 cookie는 지금 안 쓰는가?
+사이트 개인화, 네이버에서 자신만의 커스터 마이징이 가능한데, 그 정보는 나만 볼 수 있는정보.
+거기에서 cookie를 쓰인다. 팝업창 같은 경우도 cookie에 저장, 다음번 요청 시 정보가 있으면 팝업창이 안뜬다.
+서버측에 이런 정보를 다 저장하기엔 방대하기 때문에 클라이언트 측에 저장한다.
+
+윈도우나 리눅스는 웹 브라우저를 닫으면 프로세스가 종료 되는데, 맥은 사파리를 꺼도 프로세스가 그대로 존재한다.
+아이폰 사용자는 프로그램 완전 종료 하는 방법이 따로있다.
+아이폰, 맥은 프로세스를 완전 종료하지말라고함. 프로세스를 계속 띄울 수 있다. 자동으로 메모리를 관리해서 프로세스를 죽인다. 완전 종료하면 다시 메모리에 적재 시켜야한다. 그 과정이 cpu 전력소모가 더 많이있다.
+윈도우, 리눅스는 프로세스를 여러 개 띄우면 메모리 부족하면 안뜬다. = 안드로이드 메모리 부족하면 실행을 못함.
+
+
+C			S
+ |<---------tcp-------->|
+ |			|
+ |--------------------->|www.abc.com
+ |			|
+ |<---------------------|
+ |       set-cookie=x (cookie file) / set-cookie=a=1, seid=abc 
+ |			|			(JSPsession jsession - jsp)
+ |			|		  	(phpsession - php         )
+ |			|			(aspsession - asp         )
+ |--------------------->|
+	cookie : x
+
+Token : 
+최근에 많이 쓰이는 형태, sns에서 많이 사용한다.
+JWT(Json Web Token) - http header를 쓰지만, cookie를 하지 않고 별도의 header를 만든다.
+
+token과 session과 다른점
+session 방식은 인증을 받을 때마다 인증 정보를 계속 만든다. (DB에 저장) / cookie session id를 DB session id 와 계속 비교를 해야한다. -> 비용이 많이든다. 리소스 소모가 크다. (많은 사용자를 동시에 접속하기 힘들다)
+
+token도 똑같이 인증 정보를 저장하지만. 프로세스를 종료시키면, 그 token정보도 없어진다.
+JWT개념에 암호화가 있어서 그걸 서명을 한다. (세션과 크게 다를게 없지만, DB에서 ID 확인 작업을 계속 해야한다)
+토큰은 서명을 하고, 그 서명에 대한 검증만한다. (데이터가 서명이 되었는지만 확인한다 = 대규모 사용자를 받는데 용의하다) 서명, 검증만한다.
+
+C			S
+ |--------ID, PWD ----->|
+ |			|
+ |	 token=정보를 저장헤더를 붙인다.
+ |<---------------------|
+ |		|	|
+ |	token =		|
+ |	x auth toker	|
+ |	authentacation	|
+ |--------------------->|
+ |	 		|
+
+
+HTTP 0.9
+     1.0
+     1.1 : 1.1 version부터 요청 상태에 대한 시간을 늘릴 수 있다. (서버 측에도 설정이 되어있어야 한다)
+     2.0
+
+HTTP 특성상 요청을 하고 요청에 대한 응답이 오면 tcp를 바로 끊어버린다.
+많은 사람들을 동시에 서비스 하기 위해서는 한번에 여러 세션을 유지할 수 없다. (포트의 한계도 있다) / 0.9 ver 까지
+
+토큰은 인증에 사용하지 않는다. (절대로)
+
+Message Queue
+주된 목적를 사용하는
+대부분의 네트워크는 동기방식이다.
+tcp, 요청을 하면 응답 ack 가 와야한다. 그래야 다음 데이터를 보낼 수 있다.
+명령어에서 동기, 비동기의 개념은 없다.
+
+top command를 사용했다면 종료하기 전 까진 아무 작업도 할 수 없다. n& 붙이면 다른 작업도 할 수 있다.
+
+같은 시스템내에서 데이터를 주고 받을 수 있는데, 네트워크 (tcp/ip)를 이용해서 통신 할 수 있고, ipc를 이용해서 통신 할 수 있다.
+
+Queue		stack(그릇) - 데이터를 넣으면 아래부터 쌓인다.
+		|	|
+		|	|
+		|	|
+		|	|
+		---------
+
+프로토콜은 대부분 동기방식이다. 데이터를 주면 대답을 받아야 다음 작업을 받을 수 있는 형태 = 동기방식
+동기방시은 대부분 많이 사용하는데, 비동기방식이 필요한 경우가 있다. = 일을 시켜놓고 나는 다른 일을한다.
+요청을 많이 하면 처리하는데 오래 걸리는데, 동기방식이면 처리가 끝날 때 까지 다른 작업을 못한다.
+비동기식, 대규모의 작업을 처리할 때
+
+오픈스택 Dashborad에서 instance를 만들 때 이미지, neutron, cinder 등이 필요로 하고 부팅이 완료되기까지 다른작업을 못한다.
+
+웹에서 비동기 방식에서 메시지 큐를 이용해서 비동기방식을 이용한다. 라는 걸 얘기한다.
+동기식, 비동기식 뭐가 좋다 라는건 없다. 장단점이 다 있고, 쓰임새가 다르다.
+
+cpu에서는 하나만 처리할 수 있다. 클라이언트가 많아서 요청이 많아지면 요청에 대한 응답을 못하는 경우도 발생한다.
+tcp 자체 세션도 안되는 경우도 생길 수 있다. 그러면 앞에 Q를 두고 Q가 요청을 받고 순차적으로 하나씩 처리한다.
+
+was = 웹 어플리케이션, 미들웨어
+WEB	WAS(중간)	DB
+
+쇼핑몰로 치면 장바구니, 인증 담당 어플리케이션, 비용처리 어플리케이션 등 어플리케이션이 분리되어있다.
+통신을 할 때 동기화, 비동기화 통신을 할 수 있다. 쇼핑목록에서 장바구니에 넣어야한다면, 
+비동기화 방식을 써야하면 MQ(message queue가 필요하다)
+
+application server :
+어플리케이션과의 통신을 할 때 비동기화식으로 통신을 한다.
+
+java application, J2EE(표준) :
+IT에서 엔터프라이즈는 기업용, SE 서비스 하는 경우에 비용 지불을 해야함.
+JVM : 안드로이드에서 JAVA APPLICATION을 처리해준다. / 가끔 pc에서 자바를 설치하라고 뜨는데 같은 JVM이다.
+
+Web container : 
+jsp를 동작시킬 수 있는 프로그램, 자바를 가지고 웹을 만든다. 라는건 jsp 가 기본이다.
+
+웹로직, 웹스피어, 제이보스 자바에서 사용하는 형태 (내용 추가 필요)
+
+톰캣은 웹 컨테이너 밖에 없다. 톰캣은 Was? 반은 맞고 반은 아니다.
+was는 web contaier, message queue, EJB container, JCA container가 다 있어야 was이다.
+톰캣은 고로 was가 아니라 web contaier라고 할 수 있다.
+
+.NET (ASP server)
+IIS server
+
+Zend (PHP server), 유료
+
+미들웨어라고 하는건 java applicaiton만을 의미한다. 나머지는 애매하다. 그때 그때 달라진다. (범위)
+
+openstack 에서 사용하는 message queue = RabbitMQ
+
+AMQP : 오픈소스 MOM (message orented middleware) / wikipedia
+
+송신종
+queue를 통해서 message를 p(만드는사람, 퍼블리셔)와 c(컨슈머)로 표기
+P -> | | | | -> C
+
+Routing 형태
+프로듀서가 어떤 형태로 보낼지. 하나의 프로듀서에 여러 큐가 연결될 경우, 어느 큐에 전송을 할지.
+P -> X  -> | | | | -> C
+	-> | | | | -> C
+구독모델, 
+
+https://www.rabbitmq.com/tutorials/amqp-concepts.html
+
+Direct exchange : 1:1형태, 유니캐스트
+Fanout exchange : 브로드캐스트 형태, fanout에 보내면 모든쪽에 다 뿌린다.
+Topic exchange  : 멀티캐스트 형태
+Headers exchange : 멀티캐스트 형태
+
+오픈스택 요소들이 message queue를 통해서 비동기화 통신을 하게 되어있다. (메모리 상에서만 존재, disk 저장 X)
+controller에 들어가는 요소, database (message queue가 핵심) 이중화를 하려면 클러스터가 필요하다.
+메모리 상에 저장되다보니 메모리 동기화가 필요하다.
+
+grep -i rabbit answers.txt
+cd /etc/rabbitmq/
+grep AMQP answers.txt
+
+# Service to be used as the AMQP broker. Allowed values are: rabbitmq
+CONFIG_AMQP_BACKEND=rabbitmq
+# IP address of the server on which to install the AMQP service.
+CONFIG_AMQP_HOST=192.168.122.10
+# Specify 'y' to enable SSL for the AMQP service. ['y', 'n']
+CONFIG_AMQP_ENABLE_SSL=n		// 	SSL
+# Specify 'y' to enable authentication for the AMQP service. ['y',
+CONFIG_AMQP_ENABLE_AUTH=n		//	계정활성화
+# Password for the NSS certificate database of the AMQP service.
+CONFIG_AMQP_NSS_CERTDB_PW=PW_PLACEHOLDER
+# User for AMQP authentication.
+CONFIG_AMQP_AUTH_USER=amqp_user
+# Password for AMQP authentication.
+CONFIG_AMQP_AUTH_PASSWORD=PW_PLACEHOLDER
+
+grep rabbit_host /etc/*/*.conf
+주석 처리 되어있다. 자기 자신이기 때문에 호스트가 따로 지정되어 있지않음. localhost
+
+grep rabbit_port /etc/*/*.conf
+5672번 port를 사용한다.
+
+접근하지 못하면 q를 전달 할 수 없고 openstack의 대부분 기능을 사용할 수 없게 된다.
+queue가 없으면 통신할 수 있는 방법이 없기 때문에..
+
+rabbitmqctl list_users
+메시지큐에 존재하는 계정이 나오게 된다.
+
+rabbitmqctl list_queues
+
+glance :
+이미지 스토리지 (free installation) 이미지를 만들 때 최초에 한번 제공해준다.
+
+이 이미지는 어디에 있을까? -> /var/lib/glance/images/ glance의 저장소, 위치는 변경할 수 있다.
+안에 File명이 이미지의 id로 되어있는걸 볼 수 있다.
+
+[root@os-controller images(keystone_admin)]# ll
+total 1597444
+-rw-r-----. 1 glance glance 941359104  8월 13 18:40 29355532-c583-4bb6-99f9-cd5ebf5a014f
+-rw-r-----. 1 glance glance 694421504  8월 14 16:23 d1d858aa-979e-4ae3-a7ce-d7daa92dc850
+
+[root@os-controller images(keystone_admin)]# qemu-img info d1d858aa-979e-4ae3-a7ce-d7daa92dc850 
+image: d1d858aa-979e-4ae3-a7ce-d7daa92dc850
+file format: qcow2
+virtual size: 5.0G (5368709120 bytes)
+disk size: 662M
+cluster_size: 65536
+Format specific information:
+    compat: 1.1
+    lazy refcounts: false
+    refcount bits: 16
+    corrupt: false
+
+5Gib이지만 씬프로비저닝을 했기에 실제로 사용중인 662M가 용량에 표기된다.
+
+[root@os-controller ~(keystone_admin)]# grep GLANCE answers.txt
+CONFIG_GLANCE_INSTALL=y
+CONFIG_GLANCE_DB_PW=f4dfad98dd5f41d4
+CONFIG_GLANCE_KS_PW=33fa4e2231a04656
+CONFIG_GLANCE_BACKEND=file
+
+맨 마지막에 BACKEND, file로 되어있다. 저장소를 swift로 할 수 있다. (file storage)
+실제 구성에서는 file system을 사용하면 안된다.
+
+file system 
+
+http
+
+file system = http 다르지만 같다.
+
+RBD(RADOS BLOCK Device)
+
+Cinder
+
+Swift
+
+VMwere - 가능하지만 잘 안씀.
+
+Sheepdog - 지원안함.
+
+glance와 cinder는 무조건 사용한다. 
+
+Glance	- file, block, nas(nfs)를 사용할 수 있다. backend
+cinder	- block (LVM)
+Swift	- object storage
+
+오픈스택 하나를 운영하는데, 3가지의 다른 스토리지가 필요하다.
+구조마다 전용 스토리지가 필요하다. 운영, 관리 방법이 각각 다르다. 인원, 비용이 많이든다.
+
+오픈스택에서 가장 많이 사용하는 스토리지가 Ceph 이다. (오픈소스) | 내용이 방대하다
+통합스토리지라는 특징을 갖고있다. nas(nfs) = block storage, file storage,  object storage
+스토리지의 모든 형태를 제공할 수 있다.
+
+Ceph	- file	- glance
+	- block	- cinder
+	- object - swift
+
+[root@os-controller ~(keystone_admin)]# systemctl -t service | grep glance
+openstack-glance-api.service                 loaded active running OpenStack Image Service (code-named Glance) API server
+openstack-glance-registry.service            loaded active running OpenStack Image Service (code-named Glance) Registry server
+
+API가 모든 요청을 처리해준다. 설정변경, 업로드, 다운로드 다 처리한다.
+
+
+glance database - mariadb
+openstack-glance-registry.service
+
+API 서비스가 업로드 요청을 받으면 store에 확인하고 레지스트리에 전달해서 database에 업로드하는 형태
+
+vi /etc/glance/glance-api.conf default_store= << 설정 바꿀 수 있다.
+filesystem_store_datadir=/var/lib/glance/images/ // 디렉토리 변경 설정, DB에 저장 되어있다.
+backend storage를 변경할 땐 다 지우고 변경해야한다. 최악의 경우에는 DB를 건들여야하는데,
+DB를 잘못 건들이면 Openstack의 모든 내용이 잘못 될수있다.
+
+glance가 swift한테 인증 받아야한다.
+glance는 client, swift는 server
+
+openstack containers, store_container
+
+openstack catalog list
+
+swift_store_endpoint = 
+swift_store_endpoint_type = publicURL
+swift_store_container = glance
+swift_store_create_container_on_put = true
+swift_store_admin_tenants = admin
+swift_store_auth_version = 3
+swift_store_auth_address = http://192.168.122.10:5000/v3
+swift_store_user = admin:admin
+swift_store_key = P@ssw0rd
+
+swift로 바꾸고 이미지 생성하면 컨테이너가 생성되면서 이미지가 스위프트로 만들어짐
+
+ami, ari, aki : 아마존 이미지
+row : 용량이 그대로 나온다. 씬프로비저닝 x 옛날엔 속도가 빨랐다.
+
+container-format 으로 ova image를 올릴 수 있다.
+bare = cantainer x
+
+--protected : 다른 사용자가 이미지를 지우지 못한다.
+--unprotected : 기본값. 다른 사용자가 이미지를 지울 수 있다.
+
+--public : 모든 프로젝트에서 사용이 가능한 이미지, 대신 admin 사용자만 가능한 옵션
+--private : 기본값. 자신의 프로젝트 내에서만 사용 가능한 이미지
+기본적으로 private은 그 프로젝트 안에서만 사용이 가능하다. admin은 다 보임
+
+public이라고 되어있는 리소스들은 기본적으로 관리자만 가능하다.
+관리자가 아니면 퍼블릭 리소르를 만들 수 없다.
+
+json file 을 고치면 된다.
+
+ls /etc/*/*.json
