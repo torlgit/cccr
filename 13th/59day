@@ -1,0 +1,209 @@
+cinder :
+vm이 사용할 block 장치
+
+cinder의 주요장치
+cinder-api : 모든 요청을 받게된다. glance-api가 image를 올리고, 삭제하고를 자기가 처리했지만 cinder-api는 직접 volume을 제어하지 않고 cinder-volume이 제어한다.
+
+cinder-volume : 지정되어있는 backend에 요청 (lv create, delete 등) mariadb에 table 정보까지 담당한다.
+
+volume povider : block 장치를 제공할 실제 장치, 여러가지 종류의 backend lvm이 기본적인 backend다. cinder에 backend
+
+cinder-scheduler : 
+
+운영체제가 대표적인 스케줄러이다. 커널이라는 스케줄러를 사용, 하드웨어를 스케줄링 해준다. 스케줄링 하는이유는 하드웨어를 사용하는 사용자가 많기 때문이다. (사용자 = 프로그램의 우선순위를 정해준다)
+
+요청 -> API (볼륨,블럭 생성 | 삭제) -> 요청 -> scheduler (어디에 만들면 좋을지)
+생성	<-	volume 	<- 	요청	<-	API	 <-	  응답
+
+볼륨으로 구분해서 iscsi, lvm 설정이 가능하다.
+
+openstack-cinder-backup.service :
+volume을 backup 해주는 서비스 (backend storage를 가지고 있다) / 기본은 swift
+object storage가 비용이 저렴한데, 데이터를 백업하려고, 유지하는 경우도 있지만 일정시간동안 사용하지 않기 위해서 비용을 줄이기 위해 사용할 수 있다.
+
+cinder-volume loop device :
+
+loop0
+loop1
+
+loopback block device (자기 자신) 루트 디스크에 file을 만들어서 가상의 디스크를 사용, 자기 자신을 일부분을 장치로 만듦. / 관련 명령어 losetup -a
+부팅 시 딱 한번 작동한다.
+
+volume group, 별도의 백엔드로 구성할 수 있다. / iscsi로 공유가 가능하다.
+iscsi show로 보면 properties가 volume_backend_name='lvm' tail /etc/cinder/cinder.conf와 lvm매칭이 된다.
+
+vi /etc/cinder/cinder.conf (412) | grep -n enalbed_backends /etc/cinder/cinder.conf
+
+openstack default iscsi (type) / cinder.conf | new [lvm]
+
+[lvm2]
+volume_backend_name=lvm2
+volume_driver=cinder.volume.drivers.lvm.LVMVolumeDriver
+iscsi_ip_address=192.168.122.10
+iscsi_helper=lioadm
+volume_group=cinder-volumes2
+volumes_dir=/var/lib/cinder/volumes2
+
+openstack volume create type create --
+openstack volume create type set
+
+grep ^enabled_back /etc/cinder/cinder.conf
+enabled_backends=lvm, lvm2
+
+grep '^\[lvm' /etc/cinder/cinder.conf
+[lvm]
+[lvm2]
+
+위 둘이 매핑이 된다.
+
+grep ^volume_backend_name /etc/cinder/cinder.conf 
+volume_backend_name=lvm
+volume_backend_name=lvm2
+[root@os-controller ~(keystone_admin)]# openstack volume type show iscsi | grep backend
+| properties         | volume_backend_name='lvm'            |
+[root@os-controller ~(keystone_admin)]# openstack volume type show iscsi2 | grep backend
+| properties         | volume_backend_name='lvm2'           |
+
+위 둘이 매핑이 된다.
+
+둘끼리는 매핑이 되서 같아야하지만, [lvm], volume_backend_name=lvm 은 이름이 달라도 된다.
+
+cinder snapshots
+mount 중 스냅샷을 찍으면 파일이 깨질 수 있다. vm내에서 umount (최소) 해줘야한다.
+
+actions 그 상태를 가지고 새로운 볼륨을 만드는 형식, 찍은 상태로 돌아가는게 아니다.
+그 순간을 저장한다는 개념은 갖지만 원래 내용에 새로운 볼륨을 만드는 형식이다.
+마운트 상태에서는 절대 
+
+스냅샷은 원본이 없으면 안된다. 그 때 그 순간을 저장하는 형태,
+모든 스냅샷 개념의 스냅샷을 찍으면 그 데이터는 rw에서 ro가 되며 형태는 delta 값만 추가 (골든 이미지 base image 삭제가 안된다)
+lvm은 snapshots 기능을 가지고있다. cinder에 storage가 snapshots 기능을 가지고 있어야한다.
+nfs disk file로 만들어 cinder가 가능하다. / nfs는 snapshots 기능이 없다.
+stroage에 snapshots 기능을 이용해서 snapshots을 찍기 떄문에 storage에 snapshots 기능이 있어야한다.
+
+openstack volume backup
+--incremental 백업을 하루에 한번씩 해야한다? 무조건 풀 백업은 매일 1G가씩 증가, snapshots은 backup과 다르다. 그 상태를 기록하는것이지
+
+백업은 별도의 데이터가 저장이된다.
+
+맨날 전체백업이 가능한가? -> 그렇지 않다. 시스템 용량도 크고 그걸 받쳐줄 데이터가 필요하다.
+그래서 회사마다 전략이 다른데, 평일날엔 변경된 데이터 (증분백업)만 하고, 주말에 풀 백업을 한다.
+중분백업과 풀백업은 풀백업이 있어야한다.
+
+cinder backup-restore --volume --vlome test-vol test-vol-backup
+cinder backup-restore --name -test-new-vol test-vol-backup
+
+transfer은 같은 프로젝트에 있으면 그냥 쓰면 되는데, 다른 프로젝트에는 보이지 않는다.
+해당 볼륨이 필요하다면 transfer을 사용해서 옮긴다.
+
+openstack volume transfer request create
+openstack volume transfer request accept
+
+openstack volume transfer request lsit
+
+swift
+Object storage :
+비정형 데이터를 저장하는 용도로 사용한다. 비정형? 정해진 형태가 없는것
+영화, 음성, 실행 파일들은 형태가 없고 제각각이다. 이런것들이 비정형 데이터이다.
+평면 구조이다. 원래 느린데 계층 구조로 만들면 더욱 느려져서 계층 구조로 쓰지 않는다.
+
+block device file system도 정형화된 데이터를 저장한다.
+
+file system = 계층적인 데이터 구조를 갖고있다.
+
+Object - google drive, google drive,
+
+File [nas(nfs), smb] :
+
+Block (file system) : 
+주소의 한계가 있기 때문에 디스크의 한계가 있다. 계층 구조로 깊게 만들면 엄청 느려진다. (깊게 안만드는게 좋다)
+object storage위에 작동한다.
+
+파일 시스템이 존재한다. 정해놓은 방법이 있다. inode, 디렉토리의 계층적인 형태 등.
+관계형 데이터베이스 = 정형화된 데이터 베이스를 저장 // nosql은 비정형화된 데이터베이스이다.
+
+여태까지 비정형화된 데이터를 억지로 정형화해서 집어넣었다.
+오브젝트 스토리지를 페타바이트 스토리지라고 많이한다. (현재 구현이 불가능) / 파일시스템을 사용하고 직접 인터페이스를 사용하기 때문이다.
+오브젝트 스토리지에 태그를 붙여서 분류를한다. (관리하는 기법), 계층 구조가 없다.
+오브젝트 스토리지는 부족한 경우 블록장치를 계속 붙이면된다. (속도는 블록장치보다 느림)
+대규모의 비정형화된 데이터를 저장하는데 사용한다.
+폴더는 사기친다? 평면 구조로 되어있고 보여주는건 b/c b디렉토리안에 c디렉토리로 보이지만 사실 b/c라는 file이다.
+
+consistent hash ring (ring = 끝이 없다 라는 의미로 쓰인다) // https://www.toptal.com/big-data/consistent-hashing
+
+ruste 파일 시스템
+
+hash = 암호화 고정된 길이의 값이 나온다. / 랜덤성이 보장된다
+mod (나머지) hash값을 3이로 나눈다. 왜? 3으로 나누면 경우의 수가 0,1,2 밖에 안나온다.
+
+오브젝트 스토리지는 파일이 있는데 파일을 Metadata와 data로 나누고 id 를 붙인다.
+그리고 오브젝트 스토리지는 이 id로 구별을 한다. file이름 고려하지 않는다.
+파일의 속성정보랑 실제데이터를 나눈다.
+
+swift-proxy-server : 모든 요청을 받는 서비스, 웹 서버로 되어있다.
+
+Region
+	Zone
+		Device
+			Patition
+				Object
+hash ring 구조와 연관이 있다.
+
+zone : 복제본을 분리시키는 단위 (Replica), 존이 하나가 있는데 복제본을 두개 만들 수 없다. (zone의 갯수보다 같거나 작아야한다) / 논리적인 단위 (zone은 서버 단위로 사용하긴 하지만, disk, 단위 등으로도 사용할 수 있다)
+
+device : zone 하위 배치되는 형태 block 장치, disk partition | 파티션이 많아야지 분산이 고르게 이루어진다. 파티션의 갯수가 적어지면 실제로 저장되는 사이즈가 들쭉날쭉 할 수 있다. (안 좋은 형태) 파티션을 계산하는 공식도 있다. 디크스(device) 하나 당 천개정도를 세팅한다.
+
+partition : 디렉토리, 부하 분산(load balancer)
+
+object
+
+zone, device, partition 정보를 가지고 있는 파일이 있다. Ring file이라고 한다. (디스크에 있기도 한데, 부팅 시 메모리에 올린다)
+
+cd /etc/swift/
+gz 압축 파일이 있는데, 이게 ring file이다. 압축 풀면 안된다. | file로 보이지만 메모리 상에 올라가있는 형태
+
+swift-ring-builder account.builder - zone, partition, replicas, regions, device 등 정보를 볼 수 있다.
+
+/srv/node/swiftloopback - swift mount 경로 무조건 여기에 만들어야한다. 이 밑에 swiftloopback은 device 이름이다.
+
+Proxy 8080
+Account 6002
+Container 6001
+Object 6000
+
+오픈스택에서 로드밸런스를 했
+가중치를 일반적으로 다 똑같이준다. (다른 경우가 있는데, 10G 10G 10G 11G) 이러면 10G가를 쓰게된다. 그래서 다르게준다. 11G를 사용해야되니까.
+
+1. 3 레플리카, (장치 3개 추가)
+2. sytemctl stop openstack-swift-*
+3. sysemctl -t service | grep openstack-swift
+4. /etc/swift (rm *.builder)
+5. 파일시스템 만들기 xfs
+6. mount /dev/vdc /srv/node/device1 xfs defaults 0 2
+7. /srv/node/device{1,2,3} selinux 정책 권한.
+8. biluder file create (swift-ring-builder account.builder create 10 3 1 (container, object) file 3
+
+맨 첫 번째 숫자 = partition power(PP) 승수 2의 10승을 의미. device당 설정할 partition 개수
+두 번째 레플리카 갯수 (복제본)
+세 번째 minimum partition  hour 1은 1시간을 의미, 한 시간동안 이동하지 못한다는걸 의미 / 왜 하느냐? (online 상태swift가 작동되는 상태에서 추가, 감소 할 때마다 이동을 한다면, 전체적 성능 저하가 올 수 있다. 계속해서 복제가 일어나니까)
+
+잘못 만들면 지우고 다시 만들면 된다.
+
+같은 호스트에 디스크 3개를 존과 디바이스로 묶을거다. ?
+
+9. swift-ring-builder account.builder add --region=1 --zone 1 --ip 192.168.122.10 --port 6002 --device device1 --weight 1000 (zone, device만 변경)
+(잘못했으면 Remove or file 삭제 후 처음부터 다시)
+
+10. swift-ring-builder account.builder (확인 후, port 변경해서 container, object도 똑같이 등록)
+docs에 swift install 에 있다.
+
+11. 마지막으로 전체 다 확인
+
+12. swift-ring-builder account.builder rebalnce (부하분산) 3개 다 적용
+
+openstack container create
+
+openstack object create con1 hello.txt
+tree /srv/node/device*/objects/
+
+확인해보기
