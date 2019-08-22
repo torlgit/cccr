@@ -1,0 +1,207 @@
+openstack
+
+node - controller
+ 	network	
+	compute
+	storage
+
+openstack의 node는 4개의 node로 나뉜다.
+우리의 구성은 controller node = network node 까지 해주고 있는 구성이다.
+
+controller - network - compute node의 관계
+neturon : network를 제공
+
+network node
+
+4: ovs-system: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+5: br-int: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+6: br-tun: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+7: vxlan_sys_4789: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 65000 qdisc noqueue master ovs-system state UNKNOWN mode DEFAULT group default qlen 1000
+8: br-ex: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+
+ovs = openvsystem openvswitch를 관리하는 interface 
+4~8번 network는 openvswitch network 이다. | 가상의 스위치 환경을 제공해주는 패키지
+
+5 br-int : intagratied
+
+6 br-tun : tunnel
+
+8 br-ex : external,
+
+
+br은 bridge (switch)
+
+[root@os-controller ~(keystone_dev-user)]# ovs-vsctl list-ports br-ex
+eth0
+phy-br-ex
+[root@os-controller ~(keystone_dev-user)]# ovs-vsctl list-ports br-ints
+ovs-vsctl: no bridge named br-ints
+[root@os-controller ~(keystone_dev-user)]# ovs-vsctl list-ports br-int
+int-br-ex
+patch-tun
+[root@os-controller ~(keystone_dev-user)]# ovs-vsctl list-ports br-tun
+patch-int
+vxlan-c0a8c814
+
+bridge port
+
+ovs-vsctl show - 상관관계를 볼 수 있다.
+        Port phy-br-ex
+            Interface phy-br-ex
+                type: patch			/ 크게 의미는 없다. patch panel 장비와 장비를 연결 해준다.
+                options: {peer=int-br-ex}	/	peer 1:1, int-br-ex와 1:1 연결
+        Port "eth0"
+            Interface "eth0"
+
+vxlan tunneliing
+
+        Port "vxlan-c0a8c814"
+            Interface "vxlan-c0a8c814"
+                type: vxlan
+                options: {df_default="true", in_key=flow, local_ip="192.168.200.10", out_key=flow, remote_ip="192.168.200.20"}
+        Port br-tun
+            Interface br-tun
+                type: internal
+    ovs_version: "2.11.0"
+
+tunnel (암호화가 목적) = vpn
+internet은 공용 네트워크, 다 같이 사용한다. | 기업의 중요한 데이터들 인터넷에서 전송할 때 암호화를 하지 않으면 도감청, 공격자에 의해 데이터 취득이 가능해진다.
+
+이 공용네트워크에 사설 네트워크를 구성하는 형태 (기업용 회선, 임대회선) | vxlan protocol
+
+프로젝트가 다르든 같든, tenant가 많든 적든 다 같은 브릿지를 사용하는데, 이걸 논리적으로 분리 시켜야한다.
+하나의 스위치에서 랜을 나눈다 (가상으로) switch와 switch를 트렁크로 연결
+스위치가 떨어져도 같은 네트워크로 취급한다. 하지만 tennel로 취급하지 않는다.
+
+tenant 를 구성할 때 3가지 방법이 있는데,
+vlan : 
+(tennel x), vlan id(12bit, 12승)로 네트워크로 분리시킨다. 0~4906, 한계가 명확하게 존재한다. 부족하다.
+처음에는 단일 네트워크를 쓰다가 vlan을 쓰면서 논리적으로 분리 시켰다.
+	
+Vxlan :
+multicast 통신
+
+gre : 
+기본이 unicast, multicast = MPLS도 지원
+unicast는 부하가 많다. (내부적 터널이 1:1로만 연결할 수 있다 | 대비해서 다 만들어놔야한다)
+
+안할 수 있지만, 그렇게 되면 네트워크 대역이 하나밖에 없어서 의미가 사라진다.
+
+Overlay, (tenneling을 다른 말로 Overlay network라고한다)
+원래 있던 구조를 넘어선다. 그 위에서 전송되는 네트워크의 형태를 의미한다.
+
+vlan 과 tunneling의 차이점
+1. 암호화를 사용한다. 기밀성과 무결성을 제공 (상황에 따라 다르게 설정 가능)
+2. 
+
+참고 자료 : https://en.wikipedia.org/wiki/Tunneling_protocol
+
+IP in IP (Protocol 4): IP in IPv4/IPv6
+GRE (Protocol 47): Generic Routing Encapsulation (tunneling에 사용)
+OpenVPN (UDP port 1194): Openvpn | udp위에서 작동
+IPSec (Protocol 50 and 51): Internet Protocol Security
+
+vpn은 ipsec 4layer, ssl(tls) 5layer
+
+L2TP (Protocol 115): Layer 2 Tunneling Protocol | 암호화가 안된다.
+
+VXLAN (UDP port 4789): Virtual Extensible Local Area Network. | 5 layer, vlan처럼 vid라는 id를 붙여서 분리 시키고, 무결성, 기밀성을 제공해준다. vid(24bit 2의 24승) 천육백만개 할당이 가능
+
+Geneve = (vxlan + gre) | 새로운 표준 protocol, 4 layer
+수 많은 네트워크를 분리 시키기 위해서 사용. 위의 기술들을 이용해서 만든다.
+
+network node를 여러 개 만들어서 설정할 수 있음. (하나에 모두 몰리게 되면 병목 현상이 일어난다)
+aws는 선택지가 없다. 알아서 연결해주기 때문에
+
+openstack network create 설정
+
+--provider-network-type :
+flat, vlan, vxlan, gre | 실제 물리망에 대한 type을 설정
+flat = 실제 물리네트워크 대역을 사용하겠다. 라는 의미, 우리는 단일 네트워크이기 때문에 flat!
+
+--provider-physical-network : exnet (외부네트워크 이름)
+
+cd /etc/neutron/plugs/m12
+
+grep extnet *
+bridge_mappings=exnet:br-ex
+
+--provider-segment :
+vlan id (실제 네트워크의 vlan id 적어야함)
+
+ip netns list // ns : network namespace (network name isoliation) 네트워크 격리하는데 사용
+외부네트워크와 내부네트워크는 라우터로 연결이 가능하다. 라우터는 network node에 만들어짐
+linux 시스템에서 routing 기능을 갖고있다.
+라우터를 만들어서 네트워크를 연결하면 걔를 격리시키기 위해서 namespace 공간을 만들고 거기안에서만 작동을 한다.
+
+qrouter, qdhcp (dev-subnet 만들 때 생성됨, 프로세스로 작동)
+network 마다 dhcp가 격리될 필요가 있다. 서로 다른 프로젝트에 같은 네트워크 대역을 분리할 때 사용된다.
+
+bridge-utils - linux ethernet bridge :
+가상의 브리지를 만들어주는 패키지
+
+virsh list / virsh dumpxml instance-00000021 (metadata)
+
+iptables -L -n | more : 정책을 보는 명령어 / openstack
+-L (정책을 보는 것) -n (숫자로 나타냄?)
+
+chain = firewalld zone
+
+openstack bridge는 방화벽 정책을 걸수있다.
+firewalld 설정은 bridge에만 걸어놓은거다.
+리눅스 브릿지를 만들고 거기에 보안정책을 걸어놓는다.
+
+안티 스푸핑, 최소한의 방화벽
+
+ovs-ofctl dump-flows br-int 포워딩 정책
+table은 정책, 바이트 사이즈, priorty 정책 순위
+
+actions=normal (맥 테이블 보고 포워딩)
+
+ cookie=0xb34420cbc3064e1, duration=18377.605s, table=2, n_packets=210, n_bytes=18062, priority=0,dl_dst=00:00:00:00:00:00/01:00:00:00:00:00 actions=resubmit(,20)
+ cookie=0xb34420cbc3064e1, duration=18377.602s, table=2, n_packets=31, n_bytes=3514, priority=0,dl_dst=01:00:00:00:00:00/01:00:00:00:00:00 actions=resubmit(,22)
+
+dst(00)내부 통신이면 20번, dst(01)외부 통신이면 22번
+
+
+ cookie=0x538a6fb0452cc356, duration=9496.879s, table=4, n_packets=232, n_bytes=20814, priority=1,tun_id=0x40 actions=mod_vlan_vid:3,resubmit(,10)
+ cookie=0x538a6fb0452cc356, duration=18833.773s, table=4, n_packets=0, n_bytes=0, priority=0 actions=drop
+ cookie=0x538a6fb0452cc356, duration=18833.772s, table=6, n_packets=0, n_bytes=0, priority=0 actions=drop
+
+mod vid 3번 수정.
+
+
+
+ip netns exec qrouter-804f66d7-7de1-4576-be9e-73106172b607 iptables -L -t nat -n
+
+
+-t (정책) nat
+
+들어오고 나가는 절차 (들어오려면 floating ip가 필요함)
+두 개의 인스턴스
+
+compute
+
+virsh list
+virsh dumpxml instance-00000021
+brctl show
+iptables -L -n | more
+
+ovs-vsctl show
+ovs-vsctl list-ports br-int
+ovs-ofctl show br-int
+ovs-ofctl dump-flows br-int
+ovs-ofctl show br-tun
+ovs-ofctl dump-flows br-tun
+
+controller
+
+ip netns exec qrouter-804f66d7-7de1-4576-be9e-73106172b607 ip ad sh
+ip netns
+ip netns exec qrouter-804f66d7-7de1-4576-be9e-73106172b607
+ip netns exec qdhcp-da783323-6f3f-40bb-b939-296033255257
+ovs-ofctl show br-tun
+ovs-ofctl dump-flows br-tun
+ovs-ofctl dump-flows br-ex
+ip netns
+ip netns exec qrouter-804f66d7-7de1-4576-be9e-73106172b607 ip tables -L -t nat -n
