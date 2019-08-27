@@ -1,0 +1,131 @@
+ansible host1 -m ping
+ping을 보냈을 때 pong이 오면 정상적으로 작동하는 상태
+icmp를 사용하지 않고 tcp 22번으로 통신 확인을 한다.
+
+ansible host1 -m ping -a "data=xyz"
+ping을 했을 때 xyz로 응답이 온다.
+
+ansible host1 -m uri -a "url=http://192.168.122.10"
+
+firewalld
+immediate=yes
+
+ansible-doc
+1=ture=yes
+0=false=no
+
+index.html create -> ansible host1 -m copy -
+
+ansible host1 -m uri -a "url=http://192.168.122.10"
+
+GNU(GNU's Not Unix) :
+리눅스의 기본적인 라이센스, 오픈소스를 갖고 쓰고 공개를 안하면 안된다.
+
+yaml :
+
+대표적인 markup language는 xml이다.
+json은 xml과 같이 데이터를 전송하고, 포맷하는데 사용한다. xml, json은 괄호가 복잡하게 되어있어서 그걸 읽기 쉽게 만든게 yaml이다.
+
+xml, json 파일은 들여쓰기, 계층 구조는 괄호가 담당하기 때문에 한줄로 표현해도 상관없다. <>로 시작해서 </> 로 끝나면 되기 때문이다. 이렇게 사용하게되면 사용자는 읽기가 힘들지만 컴퓨터는 읽는데 아무 관계없다.
+
+indentiation : 들여쓰기, 데이터를 계층적으로 표현하는
+
+Whitespace indentitaion : 문법에 space나 공백을 넣어서 구분을한다. (tab은 인식하지 않는다 / 공백으로 인식하지 않는다)
+
+주석은 #을 붙이면된다.
+
+데이터 표현에 크게 3가지가 있다.
+list : 무조건 -(대쉬)로 시작한다. 
+	- a, - I am human <- list에 scalar를 붙이면 목록이된다. (순서는 위에서 아래로)
+	-(대쉬)를 붙이고 한칸 띄워줘야한다.
+
+string(scalar) : 가장 기본, string 문자열
+	yaml 에서는 '나 "를 붙여도 일반 문자열로 인식을한다. (특수한 경우에 사용)
+
+array(hash, Dictionary) :
+	key: value (key는 붙여야하고 value는 띄워서 써야한다. (그렇게 사용하지 않으면 문법 오류가 발생한다)
+
+[] 대괄호를 사용하면 json 방식으로 code를 줄이는 효과를 낼 수 있다.
+-a
+-b
+-c
+
+[a,b,c]
+헷갈릴 수 있는 형태
+
+name: abc
+age: 99
+{abc, 99}
+{} 중괄호를
+
+ex )
+--- # The Smiths
+- {name: John Smith, age: 33}
+- name: Mary Smith
+  age: 27
+- [name, age]: [Rae Smith, 4]   # sequences as keys are supported
+--- # People, by gender
+men: [John Smith, Bill Jones]
+women:
+  - Mary Smith
+  - Susan Williams
+
+yaml의 시작은 ---(대쉬 3개)로 시작하며 ...(...으로 끝낸다) | 한 file에 여러 문법 형태가 들어갈 경우에 사용
+
+플레이북은 하나의 플레이를 실행
+task [moduel]이 들어가는 형태
+paly에서 ok=succes
+
+palybook 목적은 task실행이 목적이다. 결과를 보려고 만든게 아님
+uri가 succes가 나오는걸로 접속 여부를 판단할 수 있다.
+
+로컬호스트 환경에서는 방화벽이 열려있든 닫혀있든 localhost이기 때문에 방화벽에 관계없다.
+다른 호스트에서 작업하기 위해선 다른 플레이북이 필요하다.
+
+cat ~/.vimrc
+set number
+autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
+
+ignore_errors: true / 에러를 무시해라라는 task의 기능
+fatal : playbook의 fialed
+
+멱등성, reload가 되는게 아니다.
+restart가 필요할 때만 restart해야한다. web server라면 상관없지만, was에 영향을 끼친다.
+network 세션이 다 끊어지게 된다.
+한번을 돌리든 몇번을 돌리든 멱등성은 유지되어야한다.
+
+handlers, 
+task가 무조건 실행이 되고, handlers는 알림을 받은 리스트만 실행이 된다.
+
+subline text (vi), 한글, 동아시아 국가 언어가 다 깨진다.
+atom (기본 텍스트 에디터) | 기능을 넣으면 언어코딩, 쿠버네티스 등등 관리 가능하다.
+visual studio code
+
+ansible-config [list/view]
+현재 적용중인 설정파일만을 볼때 view 명령어를 사용
+list 명령어를 사용해서도 볼 수 있다.
+
+ansible-config dump
+현재 설정된 값을 볼 수 있다.
+
+ansible을 보면 
+smart
+ssh -> paramiko
+
+파이썬 자체에도 ssh를 갖고있다. = paramiko ssh 파이썬 라이브러리
+ControlPersist (ssh에 이 기능이 있어야한다) / client, server 둘 다
+ - 세션 유지 기능을 갖고있다.
+
+ansible-doc -t connection -l
+paramiko (ssh보다 조금 느리다)
+ansible-doc -t become -l
+
+slack으로 채팅을 쏴준다,
+osx_say
+foreman
+timer
+
+host 1,2
+하나는 was, db ansible구성
+
+ansible command, shell, raw moduel 차이점 알아보기
