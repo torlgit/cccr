@@ -1,0 +1,78 @@
+ansible 
+
+변수
+
+왜 사용하는지..
+
+반복적인 값을 지정할 때 변수화해서 지정하면 조금 더 쉽게 설정을 일괄적으로 변경한다던지 할 수 있다.
+단순하게 정의해보면
+a: 100
+이런식으로 정의할 수 있다.
+
+a: 
+  b:
+    c: xyz
+a.b.c
+
+a['b']['c']
+.으로 표현이 안되는 경우가 있다.
+moduel에 따라서 .으로만 이루어진 경우 인식을 못하는 경우가 있다.
+파이썬으로 만들어졌는데, 파이썬이 배열을 정의하는 방법 때문에 .으로 된 방식이 지원이 안될 수 있다.
+
+SETUP
+하드웨어, 주요 os 정보를 수집하고 변수로 만들어준다. = facts변수, 사실변수
+playbook을 할 때 맨 처음 실행되는 Gathering Facts = 시스템 팩트변수를 수집:
+
+gather_facts: yes | play에 설정할 수 있다.
+
+debug
+msg(message print), var(변수명을 지정) 는 같이 사용할 수 없다. (하나만 가능)
+var는 변수를 지정하는거지 참조 하는게 아님, 변수이름을 값으로 선언해주면됨, 문법상 {{}} 값을 참조하려고 사용했던것
+조건문과 같이 사용됨, 출력값에 대한..
+
+register: [변수] 	<< task의 기능
+플레이북에서는 값이 보이지 않는데 그 값을 보기 위해서 사용:
+
+- hosts: host1
+ tasks: 
+  -include: install.yml pkg=httpd
+
+- yum:
+    name: "{{ pkg }}"
+    state: installed
+
+include task, play
+include_role
+include_tasks 테스크
+include_vars
+
+improt_playbook
+      _role
+      _tasks
+
+include와 import는 사용방식이 똑같다.
+그러면 다른점이 있을까?
+dynamic (include), static(import)
+작동 방식이 다르다. 프리프로세스 (미리 다 처리해놓고 작업)
+include는 그때 상황에 따라 갖고와서 처리하는 방식. 매커니즘이 다르다.
+
+template은 설정 파일을 동적으로 만들 때 사용한다.
+
+control ansible_host=192.168.122.1 ansible_connectio=local (/etc/ansible/)
+
+C			M
+moduel	-----copy---->	python (moduel 실행)
+				command가 실행
+				shell, shell을 띄워서 실행
+				raw 모듈은 복사해서 실행
+
+python 인터프린터를 사용하는지 안하는지, 쉘을 사용하는지 안하는지에 대한 여부
+
+command : python o shell x (| > >>, set alias...) 쉘의 기능 못 쓴다.
+
+shell : python o shell o
+
+raw : python x shell x, 모듈이 아니다. 잘 쓸 일이 없다. 장점은 파이썬 인터페이스 없이 네트워크 장비를 사용할 수 있다. (cisco network 장비 = python 설치 불가능)
+
+멱등성이 없다. -> 무조건 체인지 상태로 ..
+되도록 사용하지 않는게 좋다. (하려는 작업에 대해서 ansible 기능이 없다면.. 그때는 사용)
