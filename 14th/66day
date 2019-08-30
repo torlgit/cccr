@@ -1,0 +1,161 @@
+host1에서 host2의 ip를 알 수 있다.
+로드밸런서 작업을 할 때 backend app 로드 밸런서 서버, app1, ip, port
+was가 있는 서버의 ip를 단순하게 변수할 수 있다. (was1, was2라는 변수를 넣어서 직접 ip를 지정할 수 있다.
+그렇게 되는 경우 실제 ip와 변수의 ip를 계속 매칭을 해야한다.
+
+로드밸런서가 직접 was의 ip 를 가지고 올 수 있다면 좀 더 편하게 구성할 수 있다.
+특정 시스템에서 다른 시스템의 ip, mac 주소 fact 변수로 다른 시스템의 정보를 취득하고 그걸 사용할 수 있다.
+
+setup modeul을 돌려야하고 해당 시스템에 위임을 줘야한다.
+moduel에 대한 정보를 host가 수집해야되기 때문에
+
+gather_subset
+수집을 하기 위한 세트, setup modeul이 동작하는데 시간이 걸린다. 많은 정보를 수집해서 변수 처리 해야하기 때문에.
+필요한 정보만 수집을 하면 된다. 수집하는 대상을 줄여준다. 필요한 정보만 수집할 수 있게
+
+all, min, hardware, network, virtual 등등 !를 붙이면 해당 되는 정보는 수집하지 않는다.
+!min, !network, !hardware 등
+
+subset이 다른 작은 정보만 수집을한다. 필요한 양만큼만 수집을 하면 되기 때문에, gather_subset을 network로 설정했음
+
+host2의 ip를 알고 싶어서 등록, register,
+
+- set_fact: 를 사용해서 변수를 다시 재정의
+ host2_ip:"{{ host2_fack['ansible_facts']['ansible_eth0']['ipv4']['address'] }}"
+
+에러 처리
+row에서 많이 쓰인다.
+
+ansible은 해당되는 서비스가 성공했는지, 실패했는지 구별하기 위해서 상태코드, 리턴코드를 확인한다.
+명령어 같은 경우 실행이 되는것과 상관 없이 return code 0가 왔다고 하더라도 원하는 형태의 동작이 안될 수 있다.
+ansible은 commad shell 명령어를 단순하게 실행되는걸 확인하기 때문에 오류가 날 수 있다.
+
+command 상태에 따라서 얼마든지 실패할 수 있다. 멱등성을 제공하지 않기 때문에 상황에 따라 오류발생 여부가 달라진다.
+오류 발생 시 무시하고 넘어가는 구성이 생기게된다.
+무시하고 넘어가면 끝이아니고 뭔가 처리를 해줘야한다. block을 이용해서 오류를 바로 잡기 위한 logic을 만들 수 있고, 조건문을 이용해서 특정 taks가 오류가 발생하는 경우 추가적으로 task를 지정해줄 수 있다.
+후속적으로 반드시 오류에 대해서 처리를 해줘야한다.
+
+오류 정의 제어
+when이 들어가면 조건문이다.
+특정 조건에 일부로 failed을 만든다. 
+failed_when 일부로 failed 상태를 만드는 것, 플레이를 종료하기 위해서
+
+changed_when : 특정 조건의 task를 changed상태를 만드는 것.
+handler를 강제로 작동 시키기 위해서, task 입장에선 알림을 주기 위해서. notify 를 주기 위해서, handler작동을 위해서
+
+ansible 옵션에 --step 옵션이 있다.
+task에 대한 no, yes, continue등을 설정할 수 있다.
+디버깅할때 유용하게 사용할 수 있다.
+
+--start-at-task [task] 옵션
+task를 지정하면 원하는 위치에서 실행할 수 있다.
+
+지금환경은 task가 적어서 상관없지만 task가 50~100개 등의 구성이 많을 때 해당되는 곳
+
+--limit [host] = -l로 단축이 가능
+특정 host에 제한을 걸어둔다. --start-at-task옵션을 넣어 해당되는 위치부터 실행할 수 있다. 시간이 오래걸리는 작업, 특정 호스트만 플레이북을 작동해야하는 경우 사용
+
+user moduel, 사용자를 만들거나 변경하거나 삭제하거나 하는 모듈
+user modeul을 이용해서 사용자를 생성하고, ssh 접속이 되는지 확인
+
+hash가 없이 shadow file에 value가 그대로 들어간다.
+
+makepasswd
+
+참조하려는 파일들이 암호가 같지 않으면 복호화 할 수 없다.
+플레이북 전체를 암호화 하는건 비효율적이다.
+cpu을 가장 많이 사용하는게 암호화, 복호화이다.
+
+그리고 암호화 복호화는 속도가 느리다. 그러므로 플레이북 전체를 암호화 하는건 비효율적이다.
+ssh key, password 별도로 변수 file을 외부로 만들어서 변수 파일만 암호화 하는걸 권장한다.
+
+
+group_names : 자신이 속한 그룹이 리턴이 된다. (ex: host1, host2 mgmt)
+127.0.0.1 : (ex: test)
+
+특수태그는 조건문에 쓰인다.
+
+- host: all
+  tasks: 
+  - yum: 
+    when: 'mgmt' in group_names
+
+inventory
+
+[db]
+
+
+[was]
+was1
+as2
+
+vyos : 운영체제 
+vyos.org에서 받을 수 있음, 오픈소스
+
+vyatta, vyos를 가지고 만든 운영체제, 데비안 계열의 네트워크 장비
+
+모든형태의 라우팅 프로토콜을 제공해준다.
+ng (next generation) 다음 세대
+
+802.1q 지원
+
+configure
+show interface
+show service
+set interface ethernet eth0 address 192.168.122.30/24
+set service ssh
+commit
+save
++ 기호는 적용된게 아니므로 commit을 해줘야함. save 하면 저장됨
+set system login user vyos authentication public-keys identifier type ssh-rsa
+set system login user vyos authentication public-keys identifier key "AAAAB3NzaC1yc2EAAAADAQABAAABAQCtSVbX3Xp+yAYLIPYRRbbPabbZFLDNkVg/nXqmufDv7mkTlF5seyd92YY01V6xY3BtabCPJPIsopehKNKIyWTr+sAzbnEJAClqyDD+Q8Db6TBWoQTBxk9dNrHRV2N88B6DEFh0Yj9WtDZNKfBvIn4qk9BP1NV3/z5HhOLBLU1Y93Mr+dUVTM3zOuX5cxhOvp4AamZiF6qJhNyTPI59kfmz7qDJ3D+uuwdyemNAjCTZ8FyweyR/3it/CLw+KkseC8tnOoD4IJgjSBR+q/Tyqd5dVnhYtcZ8Gf36FRhln5z3drmhugnEGgi19L/JWDva6YqHJc6lB+PXbTID+wlQQosT"
+commit
+save
+
+ansible로 돌아와서 /etc/ansible/hosts추가
+
+ios인 경우, ios moduel을 사용해야한다.
+junos - juniper
+
+ssh type으로 접근할 수 있는게 아니다.
+ansible-doc -t connetion -l
+netconf :  
+network_cli : ssh 접근 방식과 유사
+
+vyos1 ansible_host=192.168.122.30 ansible_user=vyos ansible_connection=network
+_cli ansible_network_os=vyos
+
+ios는 ios, vyos = vyos junos = junos
+network 장비는 다 기본적으로 paramiko방식을 사용한다. 
+apt install python-pip ( centos는 python version을 명확하게 표기해줘야함 )
+
+pip = python install package
+파이썬 자체에도 패키지가 있다. 파이썬 관련된 패키지를 설치하기 위해서.
+
+opensoure에서 대부분 파이썬으로 작성되었기 때문에 pip가 필요로한다.
+
+pip install -U paramiko (-U 옵션은 업데이트 가능하면 업데이트 하세요 라는 의미) // 우분투
+
+pip 설치, 파라미코 설치로 network interface 연결해서 관리 할 수 있다.
+router moduel을 가지고 setting 한다. interface ip, acl, dynamic ip 등등등
+
+ansible host1 -m ping -vvvv (v~vvvv)
+ESTABLISH SSH (3way handshake)
+한 단순한 작업을 하는데 ssh를 7번 세션을 맺는다.
+
+EXEC
+ssh 명령어 실행. (8번의 명령어를 실행했음)
+
+local 자기가 자신에게 ssh 키를 push를 해야한다. 자기가 자기한테 접속할 때 ssh 인증,
+ansible_connection=local은 자신이 ansible controller, manage node가 가능하며, ssh보다 local 방식이 더 빠르다.
+
+ansible pipelining (default = false)
+command, pipe
+ssh 세션을 열어서 프로세스에다가 계속 명령어를 넣는 방식.
+linux pipe를 통해서 밀어넣는다.
+
+pipelinig 설정을 하면 playbook 실행도 더욱 빨라진다.
+wordpress 설치할 때 pipelinig을 설정하면 설치 속도가 더욱 빨리진다. 세션이 적기 때문에?
+
+openstack, amazon, google cloud, azure 다 ansible playbook 적용이 가능하다.
+moudel이 다 있다. 이런 모듈을 가지고 자동화로 구성한다.
