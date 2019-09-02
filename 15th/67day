@@ -1,0 +1,286 @@
+지금은 yum이나 apt로 패키지를 다운 받아서 서버를 구성하지만, 옛날에는 컴파일을 해서 서버에 올렸었다.
+
+어플리케이션을 구성을 해서 서비스를 한다는것은 쉬운 일이 아니다.
+서버라고 하는 건 서비스를 제공하기 위한 시스템이다.
+
+가상화는
+컴퓨터의 사양은 높아지는데, 리소스가 많이 남다보니 하나의 서버에 여러 시스템을 올리기 시작했고, 
+
+하드웨어 사용을 높이고 격리를 해줘서 어플리케이션을 잘 작동시킬 수 있게 해준다.
+단점도 많다. 하지만 장점도 많기 때문에 아직까지도 사용이된다.
+가장 큰 단점은 성능이 떨어진다.
+
+스케일 인 스케일 아웃. 비용적 문제, 시스템이 죽었을 때 전체 서비스가 안될 수 있다.
+
+서버를 제공하려면 어플리케이션이 있어야한다.
+클라이언트한테 제공하는 서비스말고 os 서비스 제어 (어플리케이션 실행)
+어플리케이션이 클라이언트한테 서비스를 해준다.
+
+어플리케이션을 작동하려면 OS가 필요하다. 가상 컴퓨터는 운영체제를 격리하기 위해서 os를 여러 개 띄운다. = 비효율적
+씬프로비저닝을 쓰더라도, os를 올려야하기 때문에 운영체제를 설치하기 위한 기본 리소스 소모가 된다.
+가상화까지만 해도 이 문제는 어쩔 수 없었다. 격리가 더 중요하기 때문에...
+
+가상화의 단점을 때문에 컨테이너, docker는 컨테이너를 제공하는 software중 하나이다.
+docker = container 가 아니다. 가상화보다 컨테이너가 이전에 있던 기술이다. (90년대부터 있던 기술)
+기술은 시대를 잘 타고 나야함, 타이밍이다.
+
+새로운 기술이 나오면 그 기술이 상호보완적으로 나온다. 그리고 원래 쓰던 기술이 쉽게 바뀌지않는다.
+변화에 빠르게 대응할 수 있는 사람이 오랫동안 남을 수 있다.
+
+컨테이너는 가상화의 상호보완적이다. 가상화의 기술트렌드는 너무 평범한 기술이다.
+그냥 당연하게 일반적으로 사용하고 있으므로. 컨테이너도 그러한 단계이다.
+
+컨테이너라는 용어에 집중할 필요가 있다.
+컨테이너는 일반적으로 시스템에서 사용하는 컨테이너의 개념을 따왔다.
+컨테이너는 70년대에 만들어졌다. = 물류 운송, 어떻게 물류를 잘 운송할 것인가. 물류 운송에 대한 표준화가 없었다.
+어플리케이션을 표준화된 규격에 넣는 형태, 컨테이너 박스만 잘 움직이고, 관리하면 된다. 규격화 되어있다.
+어플리케이션을 담는 그릇이 즉 컨테이너이다. 이 컨테이너는 어플리케이션이 존재하고, 이 어플리케이션은 규격화 되어있기 때문에 어떤 운영체제에서 사용을 하든 규격화 되어있고, 사용할 수 있다. 윈도우는 제외하고...
+
+윈도우에 리눅스를 올려서 컨테이너 돌리는형태, 윈도우는 리눅스를 올리면 가능하지만, 윈도우는 직접 올릴 수는 없기 때문에 애매하다.
+
+어플리케이션을 담는 그릇 = 컨테이너
+컨테이너를 구성을 하고 관리하는게 docker이다. (도구) / 도커는 컨테이너가 아니다.
+컨테이너는 어플리케이션만 들어가있다. 비교할 수 있는게 vm이다.
+vm은 os + 어플리케이션만 있다면, 컨테이너는 어플리케이션만 있다. 하나의 어플리케이션 동작을 위해 여러 가지의 file이 필요로한다. (실행 파일만 딱 하나만 있는 형태가 아니다. 어플리케이션만 존재한다는거다)
+어플리케이션만 존재하기 때문에 운영체제가 없다.
+
+컨테이너 자체의 목적은 격리하기 위함이다.
+
+운영체제 없이 어떻게 작동을 하는가? -> host에 있는 운영체제를 같이 공유해서 사용한다.
+기본적으로 운영체제에 필요한 여러가지 커널이 필요없고, 어플리케이션만 존재한다.
+
+가상화 =  무겁다 / 컨테이너 = 가볍다 라는 이유가 컨테이너는 os가 없고, 어플리케이션만 동작하면 되기 때문에 어플리케이션 작동을 위한 리소스만 있으면 된다. (os의 리소스는 필요가 없다)
+
+docker engine
+python code를 실행하기 위해서 runtime 이 필요하고 java code를 실행하기 위헤서 jvm runtime이 필요로한다.
+container를 실행하고 작동 시키기 위해서 runtime이 필요하다. 그게 docker이다.
+
+docker version 표기법을
+년도 두자리, 월 두자리로 표기한다.
+
+docker version은 세 가지가 있다.
+docker CE - Edge
+	  - Stable
+       EE
+
+CE: 커뮤니티 에디션 (무료)
+EE: 엔터프라이즈 버전 (docker support) / 비용 지불)
+
+Edge는 매달 나오고, 나오게 되면 이전 버전 지원하지 않는다.
+Stable은 안정화 버전이다. (3개월마다 버전을 낸다) = EE와 비슷하다.
+
+EE version은 1년동안만 제공한다. 1년이 지나면 지원하지 않아서 버전 업데이트를 해야한다.
+
+Docker install
+
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum list docker-ce
+
+docker run hello-world (컨테이너 실행)
+run 이미지를 가지고 실행하세요. 라는 의미
+hello-world[이미지]
+
+이미지 이름을 지정할 때 image:[tag]가 붙게된다. tag를 지정하지 않으면 무조건 latest로 지정된다.
+pull from libary -> hub docker
+
+계층, 이미지의 계층으로 구성이 되어있다. pull complete (이미지가 길면 pulling 과정을 볼 수 있다)
+이미지를 다 받게되면 hash가 나오게된다. 다르게되면 pilling error가 뜬다.
+
+같은 이미지를 두 번 실행할 경우 local에 있기 때문에 pulling하지 않는다.
+
+application이 text를 출력, 
+1. The Docker client contacted the Docker daemon.
+도커 데몬이 도커 클라이언트에 연결하고 있다. (command = client) / 시스템 관리를 위한 client 도구
+mysql command만 설치해서 접속했었는데, 그것과 같은 유형 (docker demon에 접근) | local에 있는 demon에만 접근
+원격지에 docker client command만 설치해서 접속할 수 있다.
+
+2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+도커 데몬에 있는 시스템, 즉 local에서 hello-world 라는 image가 있는지 찾는다. docker hub에서 pull=갖고온다. (지정한 docker demon repo에 있는 image에서 찾아본다)
+
+3. The Docker daemon created a new container from that image which runs the executable that produces the output you are currently reading.
+갖고온 이미지를 컨테이너로 만들어 실행시킨다. hello-world 이미지는 텍스트를 출력해주는 어플리케이션 형태이다.
+그 출력은 demon에서만 실행한 상태이고 눈으로 보이진 않는다.
+
+4. The Docker daemon streamed that output to the Docker client, which sent it to your terminal.
+표준 출력을 client에서 전송을한다. client 전송이된 output을 terminal에 출력
+
+이러한 절차가 있다는건, 오류가 났을 때 어디 부분에서 오류가 났는지 찾아봐야한다.
+1~4가 hello-world를 실행 시킨 결과이다.
+
+docker image ls
+docker demon image에 저장한다. (local)
+
+tag: latest / image version,
+image id: image 구별할 수 있는
+created : 언제 이미지가 생성이 되었는지
+size: 이미지의 사이즈를 보여준다.
+
+docker container ls -a
+status : 컨테이너의 상태
+
+컨테이너는 하이퍼바이저랑 비교하게 되는데, vm은 끄지 않는 이상 계속 유지가 된다.
+vm은 실제로 꺼야지 종료가 된다. 컨테이너는 그냥 꺼진다. application이 text를 출력 시키는거다. -> 출력을 시키면 application이 종료가된다.
+
+모든 명령어는 바이너리가 존재한다. = systemd를 이용해서 service를 돌린 형태..
+
+vm은 처음부터 start, enable 걸어두면 작동을한다. (vm을 킨 다음에 서비스를 구성할 수 있다)
+컨테이너는 image를 만들때부터 어떤 어플리케이션을 실행할지 정하고, 그 어플리케이션을 실행한다.
+
+컨테이너는 그냥 이미지를 실행 시키는게 끝이다.
+background 작동하게 만드는 것도 만드는 사람의 마음이다. (application 종료가 된다면 container도 종료된다)
+종료된 container을 다시 실행 시킬 수 있지만, 종료가 되면 끝이다.
+
+docker container ls 를 했을 때 hello-world가 안나오는 이유가 그 이유이다. (이미 실행하고 종료된 상태이므로)
+
+docker image rm hello-world (이미지 삭제) -f // -f 옵션을 이용하면 켜져 있는 컨테이너도 삭제가 가능하다.
+
+docker image pull hello-world 
+이미지를 갖고온다. image id가 같다라는건 같은 이미지라는 의미이다. (생성된 날짜, 사이즈도 같다)
+tag는 이미지를 만드는 사람이 마음대로 붙이는 것 latest tag는 특정 사용자는 사용안하는 경우도 있다.
+이미지를 지정할 때 tag를 지정하지 않으면 무조건 latest로 인식한다.
+이미지를 로컬에 가지고 오는 커맨드.. 라고 정의할 수 있다.
+
+latest tag가 붙은 이미지는 사용하지 않는게 좋다.
+latest라는 의미는 최신이라는 의미인데, 시간에 따라서 안에 이미지가 달라질 수 있다.
+서비스를 하고 있는데, latest라는 tag가 뭐다. 라고 공지하지 않는다.
+오늘 사용했던 latest image와 내일 사용할 latest가 같지 않을 수 있어서 Tag로 특정한 버전을 명시하는게 좋다.
+latest가 뭔지는 직접 확인해 봐야하는 문제이다.
+
+docker container create hello-world
+
+docker container ls는 현재 작동된 컨테이너의 목록만 나온다.
+
+run은 여러 단계가 있다.
+없으면 갖고오고, create하고 실행시킨다.
+특정 상황이 아니면 run을 실행한다. vm처럼 하는게 없이, 실행하는게 다 이다. 더 이상 할 수 있는 건 없다.
+이미지를 어떻게 잘 만드느냐가 중요하다.
+
+컨테이너 관련 작업은 container 이미지 관련 작업은 image로 시작하는게 일반적이다.
+container의 id가 hostname이 된다.
+
+현재 실행 중이면 status가 up이 된다.
+
+docker container pause loving_jennings
+(Paused) 상태, vm에 일시정지와 같다. / unpause로 일시정지를 풀 수 있다.
+
+stop하게 되면 exited가 뜬다.
+
+어플리케이션 상태에 따라 컨테이너가 종료 되느냐 마느냐가 정해진다.
+표준 출력은 따로 작업을 하지 않더라도 표준 출력이 클라이언트 측으로 전송이된다.
+input은 standard를 유지한다.
+
+command로 치는게 standard input, 화면에 나오는건 output
+터미널 없이 쉘을 실행할 수 없다. 터미널을 실행 시켜서 쉘을 실행 시켜야한다.
+
+표준 출력은 클라이언트 터미널로 전송하게 된다. -i 옵션 없이는 볼 수 없다.
+
+docker container run -i ubuntu
+docker container run -t ubuntu / container에 입력으로 들어가지 않는다. 터미널만 실행됨
+
+쉘은 터미널이 있어야 제대로 된 표시가된다.
+
+docker container run -it ubuntu
+터미널과 input을 사용할 수 있다.
+exit하지 않고 ctrl + p + ctrl + q 하니까 container에서 종료되지 않고 컨테이너를 빠져 나올 수 있다.
+
+이미지가 쉘을 사용하는 어플리케이션을 사용하면 -it로 접속이 가능하다.
+그 이외에는 어플리케이션 실행이 다르다.
+
+container 지울 때 id로 지울 수 있다. (2자리 이상 써야함)
+2자리 이상 일 때 겹치게 되면 3자리 4자리 더 써주면 삭제가 가능하다.
+
+QOS가 작동하기 때문에 같은 대역폭에서 다운로드 하면 느려질 수 밖에 없다.
+
+컨테이너로 이미지를 올려서 서비스를 할 수 있지 않을까?
+systemd가 없기 때문에 서비스를 실행할 수 없다.
+
+리눅스 배포판 이름으로 된
+가상 컴퓨터로 만들었지만 centos가 host이다.
+centos에서 ubuntu 컨테이너를 돌릴 수 있다. ubuntu에서 centos에서도 컨테이너를 돌릴 수 있다. (최소한의 이미지)
+최소한의 필요한것만 남겨 놓았기 때문에 command가 없는 경우가 있다.
+
+배포판 이미지들은 shell을 기본 실행하는 어플리케이션이다.
+vm처럼 쓸 수 없다. -> 그럼 왜 있을까? -> 다른 이미지를 만들 때 사용할 base image라고 한다.
+이미지를 만들어야하는데, centos 기능 전체가 필요하지 않는다. 중요 기능만 갖고, 원하는 기능만 추가할 수 있다.
+vm처럼 뭔가 설치를 해서 서비스를 하기 위해 만든게 아니다. 이미지 커스터마이징을 할 때 사용된다.
+
+/usr/sibn/httpd -DFORGORUND &
+매번 시스템이 작동할 때 이렇게 동작할 수 있게 설정하면 동작을 한다.
+
+어플리케이션 자체에서 forground, background 지원을 안하면 할 수 없다.
+
+httpd-foreground = apache
+기본적인 개념은 shell이 아니기 때문에 terminal을 할당해봤자, input을 줘봤자 할 수가 없다.
+
+docker container run -d httpd
+대부분에 background에서 작동하는 이미지들은 위와 같은 형식으로 작동한다. 
+
+detach라는 건 deomon background 이라고 생각하면 이해하기가 편하다.
+attach는 shell이 떠있는, 이미지를 만들 때 사용할 베이스 이미지로 사용한다. (작동은 detach로 한다)
+이미지에 따라서 무조건 d나 it옵션으로 다 작동 되는게 아니다.
+
+https://hub.docker.com/ = public image
+오피셜이미지는 대부분 일반적으로 믿고 쓸 수 있다.
+
+hub.docker.com
+docker container run -itd ubunutu
+input, terminal로 작동한 뒤, background 작동 (bash shell이 계속 되는 이유는 -it 옵션)
+
+PID name space 때문에 격리가 되었다.
+격리된 공간에서는 1번 프로세스이지만 
+
+containerd-shim = container
+
+docker container top gallant_ride
+
+docker container ls -aq
+quite, id만 return 시킨다.
+
+docker container exec -it gallant_ride bash
+어플리케이션을 추가로 실행, bash shell을 실행, ps -ef로 보면 bash가 2개 나온다.
+
+docker container exec 00 ls
+어플리케이션을 실행하고 종료된 형태, top명령어를 사용해서 보면 bash shell만 남아있다.
+
+기본적으로 컨테이너의 출력 표준은 현재 터미널로 나온다.
+forgrund
+
+어플리케이션에 접근할 때 attach를 쓴다. (처음부터 it를 썼으면 상관없지만)
+작동을 하는지 가장 잘 알 수 있는 방법이 쉘을 띄워서 확인하면 되지만, 쉘을 지원하지 않으면 안된다.
+어플리케이션이 제대로 작동하면 그 이미지는 목적을 이루고 있는거다.
+
+attach와 exec를 이용해서 어플리케이션에 접근한다던지, 다른 command를 이용해서 test를 한다던지하는 확인 방법이 있다.
+
+배포판 이미지는 실제 커널을 포함하고 있지 않는다. (커널의 버전은 다를 수 있어도 같은 커널을 사용하고 있다)
+컨테이너는 결국 윈도우에서 돌 수 있느냐? -> 리눅스 커널이 필요, 윈도우 자체만 보면 컨테이너 작동할 수 없다.
+가상 컴퓨터로 리눅스를 올려서 리눅스 커널위에서 컨테이너를 돌리는거다.
+
+container 이름은 --name으로 붙일 수 있다. // rename을 이용해 변경도 가능하다.
+
+docker container run -it ubuntu bash (마지막 bash가 실행할 명령어)
+
+docker image pull 이미지 가져오는것
+docker container create 생성만 하는 것
+docker container start 
+	==> docker container run
+
+docker container pause
+docker container unpause
+
+docker container stop
+docker container rm
+
+docker image rm
+
+------------------------------------------------
+docker container run -it
+docker container run -d
+(두 개가 결합이 가능하다)
+
+docker container attach
+docker container exec (추가로 실행할 형태)
+
+컨테이너 실행을 해도 종료가 되도 어플리케이션을 볼 수 있다.
+attach, dttach 작동되는지 확인...
+
+wordpress image, mysql image, haproxy image
