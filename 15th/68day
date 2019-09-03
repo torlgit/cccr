@@ -1,0 +1,195 @@
+docker
+
+image 계층적으로 구성되어있다. 처음에 컨테이너를 실행할 때 이미지를 pull을 해서 갖고오는데, 이미지의 계층을 볼 수 있다.
+
+docker image inspect [이미지]
+
+ContainerConfig
+Config 
+Env 환경 변수, 이미지를 만들 때 특정 환경 변수를 설정할 수 있다.
+Cmd 컨테이너가 되었을 때 어플리케이션을 지정할 부분
+
+이미지에 어떤 어플리케이션이 실행이 되는지, cmd 항목을 보면 어떤 어플리케이션이 실행이 됐는지 알 수 있다.
+
+"RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:af0b15c8625bb1938f1d7b17081031f649fd14e6b233688eea3c5483994a66a3"
+
+
+MergedDir (아무것도 없다 우리가 볼 수 없다 리눅스 파일시스템으로 볼 수 없음)
+UpperDir (가장 최상위에 있는 계층)
+WorkDir
+rowerDir
+
+4개가 합쳐진 형태로 제공된다.
+도커에서 사용하는 파일시스템은 유니온 파일시스템 (계층적 구조)
+단일 계층이기 때문에 위치가 다 같다.
+
+/usr	/bin	/usr/bin	= /usr /bin /usr/bin 	 =	meged
+
+ELF : 리눅스의 실행 파일
+
+특정 파일 하나가 바뀌게 되면 계층 구조이면 이미지 전체가 바뀌게된다.
+이미지 사이즈가 작다면 금방 받으니까 관계없지만, 이미지 용량이 커지는 경우 이미지 안에 file 하나를 바꾸면 다시 다운 받아야한다.
+필요한 부분만 새롭게 받기 때문에 공간, 네트워크 속도의 효율성이 있다.
+
+CMD [\"httpd-foreground\"] -> WorkingDir": "/usr/local/apache2
+httpd의 구조를 보면 아래와 같이 되어있는데 cmd가 절대경로로 되어있고 workingdir을 참조하는걸 볼 수 있다.
+그리고 그 디렉토리안에 들어가보면 httpd-foreground file이 있는데, 이 안에 exec httpd -DFOREGROUND "$@로 되있는걸 볼 수 있다.
+
+docker image tag [기존이미지:tag] [바꿀이름:tag]
+원하는 이미지, tag를 붙일 수 있다.
+
+hello-world	test:v1 (계층에다가 tag라고 하는 메타 데이터를 붙여 놓은 형태)
+이미지명은 꼭 똑같지 않아도 상관없다.
+
+같은 이미지가 여러 개 있으면 tag만 삭제가 되고 tag를 다 삭제해야 local에서 이미지가 삭제된다.
+
+docker image inspect [컨테이너명]
+NetworkSettings 컨테이너의 네트워크를 볼 수 있다. gateway는 따로 지정하지 않는 이상 172.17.0.1이다. 컨테이너의 갯수에 따라 2,3,4 등 dhcp로 부여된다.
+
+ip ad sh -> docker0: 	//	도커 패키지를 설치하게 되면 설치되는 도커 브릿지이다.
+도커 브리지는 172.17.0.0/16, gateway는 1번을 갖게되고 자동으로 dhcp로 인해 ip를 할당 받는다.
+사용자에 필요에의해 브리지는 더 만들 수 있다.
+
+vethd, docker0과 도커 컨테이너를 연결 시켜준다.
+
+docker network ls
+NETWORK ID, NAME, DRIVER, SCOPE
+
+NETWORK ID:
+NAME : 임의로 바꿀 수 있다.
+DRIVER : 
+	bridge : doker0를 이용해서 네트워크를 제공 (defualt)
+	host : host와 network를 공유하게 된다.
+	       같은 이미지를 사용할 경우 포트가 같으면 첫 번째로 실행한 컨테이너만 실행된다.
+	       이미지 포트를 바꿀 수 없기 때문이다.
+	null : 컨테이너에 네트워크가 없는 경우 / 아예 네트워크 작동하지 않는다.
+	       어플리케이션 실행하는데 네트워크 통신 없이 작동하는 경우
+SCOPE : 무조건 local이다.
+
+기본적으로 만들게 되면 com.docker.network.bridge.name": "docker0
+network 옵션을 붙이지 않으면 무조건 bridge type이 된다.
+
+docker container run -it --network host nettool bash
+network를 host로 지정하면 host와 네트워크를 공유하게 된다. 
+이 방식으로 컨테이너를 몇 개씩 만들어도 네트워크를 공유한다.
+
+"ExposedPorts": {
+"80/tcp": {}
+apache가 사용할 포트, 외부로 노출할 포트 80번 (centos, ubuntu에는 이러한 설정이 없다)
+컨테이너가 외부로 노출할 포트 host의 ip로 컨테이너에 접근할 수 있다.
+
+docker container run -d -p 80:80 httpd
+0.0.0.0:80->80/tcp | 첫 번째는 host에서 노출할 포트(원하는 포트), 두 번째는 컨테이너 포트(이미지에 명시되어있다)
+포트를 포워딩, ss -tnlp로 확인할 수 있다.
+
+host에서 한번 열었던 포트는 다시 만들 수 없다. (사용 중인 포트이기 때문이다)
+
+docker network create --subnet 10.0.0.0/24 --gateway 10.0.0.1 net10
+기본적으로는 bridge type network만 만들 수 있고, null과 host network를 만드는건 의미도 없다.
+
+docker container run -it --network net10 nettool
+
+iptables -t nat -L | grep MASQ
+
+container를 서로 다른 birdge로 만들었을때 게이트웨이로 트래픽을 받고 호스트가 받는데, 10.0.0.0으로 가는 길이 있기 때문에 bridge network 끼리 통신이 가능하다.
+
+컨테이너끼리 통신하는게 쉽지않다. docker container run -itd --name con3 --link nettool bash
+--link 옵션을 사용한다면, 컨테이너끼리 알 수 있다. (/etc/hosts file에 추가됨)
+컨테이너와 컨테이너가 이름을 가지고 통신할 수 있다. (컨테이너는 라이프 사이클이 짧다) | dns 서버가 없다.
+
+스토리지, docker volume, 환경변수, 컨테이너의 최대 리소스 제한 (컨테이너와 볼륨의 라이프 사이클을 분리 시킨다), 다른 docker를 사용할 때 다시 붙일 수 있다.
+
+실제 이미지를 할 때 latest 를 사용하지 말아야한다.
+
+mysql, mariadb 이미지마다 설정을 해야하는게 있을 수 있다.
+docker container logs [id] / 오픈스택에서도 콘솔 탭에서 부팅을 볼 수 있었는데, container도 똑같다.
+
+entrypoint : 
+
+image		     3	2  1
+	entrypoint : O	O  X
+	       cmd : O	X  O
+
+둘 중 하나는 존재해야한다. 최초의 컨테이너를 실행했을 때 실행할 어플리케이션을 지정
+
+1. cmd: httpd -> command를 사용하면 cmd 자체 어플리케이션이 아닌 다른게 실행이된다.
+2. entrypoint: httpd, ls
+	# docker container run ubuntu ls(-l) (endtrypoint 가정), 옵션? 아규먼트로 들어간다. ls -l
+3. entrypoint: A
+   	 cmd : B	A(B) / 옵션이나 아규먼트가 된다.
+
+#!/bin/bash
+echo '$0:' $0
+echo '$1:' $1
+echo '$2:' $2
+echo '$3:' $3
+echo '$4:' $4
+
+docker container inspect db3 | grep LogPath
+로그가 저장되는 경로
+
+docker container logs [container id] // -f = live
+
+docker container run -d -p 3306:3306 --name db3 -e MYSQL_ROOT_PASSWORD=P@ssw0rd mysql:5.6
+
+docker container run -it --link db3 --name db-client --rm mysql:5.6 mysql -h db3 -u root -pP@ssw0rd -e "create database abc"
+docker container run -it --link db3 --name db-client --rm mysql:5.6 mysql -h db3 -u root -pP@ssw0rd -e "show databases"
+
+centos, ubuntu는 volume 설정이 안되어있다.
+mysql cotainer을 생성하면 생성할 때마다 볼륨이 생긴다. (container을 다 지워도 volume이 남아있다)
+/var/lib/docker/volumes에 만들어진다.
+
+mounts 추가로 제공한 volume이 나온다.
+
+docker container run -d -v ~/test-vol:/mnt AAA
+1. home/test-vol -> mnt/AAA로 conneting
+
+docker container run -d -v vol1:mnt BBB
+2. vol1:mnt/BBB -> create
+
+docker volume create vol2
+docker container run -d -v vol2:/mnt CCC
+3. create vol2 -> vol2:/mnt/CCC
+
+# docker volume create web-content
+# touch /var/lib/docker/volumes/web-content/_data/index.html
+# docker container run -it -v web-content:/mnt ubuntu
+
+docker volume prune | 사용하지 않는 볼륨삭제, (연결되지 않은 볼륨) / volume, image, container
+dangling image = tag가 없는 이미지
+
+(볼륨도 생성) (경로도 볼것)
+1. mysql image container
+2. create db
+3. mysql container delete
+4. remain volume
+5. mysql image -> container create (existing volume)
+
+container의 재시작 정책 = no.
+재시작 없음 이라는 뜻이다. always는 모든 상태에서 재시작
+
+docker container run -itd --restart=always --name u2 ubuntu (무조건 재시작 / 항상 실행)
+docker container run -itd --restart=on-failure:3 --name u3 ubntu (문제가 발생했을 때 재시작 / 숫자 지정 o)
+kill -15 [process name] : 정상 종료
+
+재시작을 하면 해결 되는 경우도 있지만, 모든 프로세스가 그렇진 않다.
+특히 웹은 콘텐츠 문제이기 때문에 재시작해도 안될 가능성이 많다.
+
+sha512sum /dev/zero & -> cpu만 사용함, kernal에서 제어하기 때문에 1:1:1 비율이다.
+
+docker container run -itd --name c1 --cpu-shares=100 ubuntu
+cpu-shares는 가중치이다. 어느쪽에 cpu 할당량을 더 줄것인지에 대한.. 가중치는 상대적이다.
+shares보다 --cpus 1 --memory 200m | cpu core, memory 제한을 걸 수 있다.
+제한을 걸지 않으면 컨테이너가 실제 하드웨어의 리소스를 다 사용할 수 있고, 컨테이너끼리 리소스 사용에 대한 경쟁을 한다. 그렇게 되면 시스템이 느려질 수 있다.
+
+최대 사용량의 제한을 반드시 줘야한다. 논리 cpu, 소수점 사용도 가능하다.
+
+어떤 환경, 어떤 볼륨, 네트워크를 어떻게 구성할건지.
+이미 만들어진 이미지이기 때문에.. 그것만 구성하면된다.
+
+ansible-doc --l | grep docker 앞단에 있는 것만 포트 포워딩 해주면된다.
+
+----->>>>	playbook.......
