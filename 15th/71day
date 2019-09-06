@@ -1,0 +1,213 @@
+workload
+쿠버네티스에서 컨테이너라는 용어를 많이 사용하지 않는다.
+우리나라말로 번역하면 작업북
+
+controller
+	Replication Contorller (제일 많이 사용)
+	Replicaset (제일 많이 사용)
+	Daemonset
+	Job, CronJob
+	Statefulset
+	Deplayment
+	Horizontal Pod Autsocler (HPA)
+
+어플리케이션 용량, 고가용성을 위해서 복제본을 둔다.
+
+배포 단위는 Pod (파드) - container
+
+Pod :
+논리적인 오브젝트, 안에는 컨테이너가 존재한다.
+하나의 컨테이너에 하나 이상의 어플리케이션을 배치하지 않는다.
+
+하나의 이미지에 두 개의 어플리케이션을 작동시키지 않는다. (MSA 개념)
+하나의 컨테이너에 여러 개 어플리케이션이 배치 되어있는 경우 (WAS, DB)
+하나의 컨테이너에 여러 개 어플리케이션을 배치하면 격리가 되지 않는다. (isolation) - 그러면 컨테이너를 할 필요가 없다.
+격리성을 위해서 하나의 어플리케이션을 배치한다.
+무조건 같이 동작해야한다.
+
+file puller
+web server
+
+command는 간단한 테스트용으로만 사용하고, 보통은 yaml 파일을 작성해서 관리한다.
+
+오브젝트 : P43 (그림)
+쿠버네티스에서 생성하는 오브젝트는 yaml로 정의한다.
+apiversion, metadata = 모든 오브젝트에서 공동적으로 사용
+kind = 오브젝트 종류 (정해져 있는 형태) / 리소스를 생성하기 위해서 기본적으로 api가 존재.
+쿠버네티스의 모든 통신은 api로 통신한다. 리소스 종류에 따라 사용하는 api 버전이 다르다.
+리소스의 메타데이터 (일반적으로 name(리소스의 이름) 무조건 포함한다. lables(있어도 되고 없어도됨)
+
+spec 은 있을수도 있고 없을수도 있음. 관리하기 위한 실질적인 속성
+pod 안에는 컨테이너라는 속성이 필요하고, 컨테이너에는 최소한 image가 필요하다. (어떤 이미지로 생성을 할지)
+
+pod라던지, 리소스들을 볼건데 안에 내부에 들어가는 대부분 spec에 들어가는 내용은 리소스 종류에 다르다.
+spec안에 필수내용이 존재한다. containers안에는 Image가 필수로 존재 해야한다.
+모르면 인터넷에 물어보는게 아니라 메뉴얼을 봐야한다.
+
+kubectl explain pod
+status << 쿠버네티스가 관리하고 제어한다. 직접 지정하는게 아니다. (read-only)
+
+kubectl explain <type>.<fieldname>[.<filedname>] // -required- (필수항목)
+
+api의 규칙	// 39
+kubectl api-versions
+
+master node에 있는 api server에 있는 version의 목록
+
+name 쿠버네티스에서 관리할 수 있는 리소스 이름
+SHORTNAMES로 command를 줄일 수 있다. (약자)
+APIGROUP 리소스의 그룹
+pods는 리소스 그룹이(apigroup) 없다. = v1만 사용이 가능한다.
+deployment = api group(apps) 이런식으로 매칭이 된다.
+
+알파, 베타, 스테이블 (kubectl api-versions로 apps 참조)
+
+apps/v1 (버그가 있을 수 있다. 기본적으로 사용이 막혀있다 쿠버네티스 개발자라고 하면 사용할 수 있다) / 개발자가 아닌 이상 실제 서버에서 사용하지 않는다.
+
+apps/v1beta1 안정성이 붙은것만 베타를 붙일 수 있다. 기능상의 안전성은 보장이 되어있다. / 문제가 되는 형태는 기능이 삭제되거나 변경될 수 있다. (사전에 공지를 해준다)
+
+스테이블 버전 : vx또는 x 정수이다. =  v1
+
+apps/v1beta1 = extenstions/v1beta1 같다. 기본적으로 기능이 같다.
+처음엔 extenstions만 있었지만 쪼게놓은 형태이다.
+
+p54
+apiversion = v1
+kind = pod
+metadata (pod의 이름)
+spec (실제로 정의할 스펙)
+image (업로드한 이미지 사용)
+name 컨테이너의 이름
+ports (이미지내에 있는 포트)
+
+도커 커맨드를 할 때 포워딩을 거는데, 쿠버네티스는 service가 포트포워딩을 하는거지, pod에서 제어할 수 없다.
+kubectl crate << (모든 리소스는 파일을 만든 이후에 이 명령어로만 작동한다) -f, 디렉토리를 만들어놓고 거기에 실행
+yaml에 관점에서는 하나의 yaml file안에 여러 개의 리소스를 정의할 수 있다.
+항상 만들어진 다음 정보를 보려면 kubectl get [리소스종류]
+
+p55
+-o yaml [output을 yaml형식으로 보여주세요] 라는 명령어, -o json [output을 json형식으로 보여주세요] 라는 내용
+
+p56
+kubectl descirbe pods cccr-pod
+위와 비슷한 형식, 정제 되어있다. (Events) 부분이 중요 -o 옵션으로는 볼 수 없다. 문제에 대한 추적을 할 수 있다.
+
+p57
+kubectl logs cccr-pod / pod에 컨테이너가 여러 개면 -c 옵션을 사용해서 컨테이너 이름을 지정해서 로그를 볼 수 있다.
+
+kubectl port-forward [pod] [port]:[port]
+파드 포트 포워딩 (임시로 테스트하기 위해 사용하는거지, 영구적으로 하는게 아니다)
+쿠버네티스는 파드를 노출 시키기 위해서 서비스를 만든다. (외부에 노출시킬 포트 : 파드의 포트)
+foreground로 작동하고 forwarding을 유지하려면 계속 터미널을 유지해야한다. (임시 테스트용)
+클라이언트 까지 포트포워딩이 다 이루어진다. / 접속은 로컬호스트로한다.
+
+클라이언트가 있는 곳 까지 포워딩을 열어준다.
+
+p58
+Label
+tag, obejct에 대해서 정보를 붙여놓는 것 (search) 하기 위해 붙여놓는다.
+컨테이너는 훨씬 더 많은 양이 만들어진다. / 오브젝트 이름으로 구별이 불가능하다.
+리소스 구별을 label을 붙여서 구별을 한다.
+label의 설계를 잘 해야한다. / 표기를 할 필요가 있다. 배포 단계라던지...
+
+version에 대한, QA, 계층 (frontend, backend), partition (customerA / customerB) 문서를 만들어야한다.
+key: value의 형태이다. (문서화 해야한다)
+metadate에 붙이게 되고, (labels 라는 지시어 사용) 여러 개 지정 할 수 있다. | 일관성 있게 구성해야함
+env = dev
+tier = front 이런식?
+
+kubectl get pods --show-labels
+kubectl get pods -L env,tier | 보고자 하는 key를 지정 (모든 파드 범위)
+kubectl get pods [pods name] -o yaml | yaml 형태
+
+p60
+label 추가, 제거, 수정이 가능하다.
+
+kubectl label po cccr-pod env=dev << 추가
+kubectl label po cccr-label-pod env=debug << 수정 // 키가 바뀌지 않는다. [--overwrite] 옵션을 써줘야한다.
+
+라벨셀렉터
+기본적인 기능은 검색을 하는 것, 방법은 두 가지가 있다.
+특정 키 (있는지 없는지) | 키와 값 (있는지 없는지)
+
+평등기반 : 연산자를 이용한다. = / == | != (not)
+세트기반 : in / notin (있는지 없는지)
+
+p62
+평등기반
+-l tier / tier키가 있는 label을 검색
+-l '!tier' / tier키가 없는 것
+
+-l env=debug
+-l 'env!=debug'
+
+controller와 제어하기 위한 pod의 상관 관계을 정의하는데 그걸 정의 하는게 라벨셀렉터이다.
+오브젝트와 오브젝트 관계에 라벨을 부여하고, 다른 오브젝트가 특정 오브젝트와 연결하기 위해 라벨셀렉터를 사용한다.
+
+세트기반
+-l 'env in (debug,dev)'
+-l 'env noitin (dev)'
+
+어노테이션 : 
+주석이라고도 해석한다. 용어로는 주석이라는 개념이 맞긴한데, 1차적으로 용도는 주석이맞다. key: value 형태
+label은 셀렉터가 존재해서 검색을 하고 연결하고 그 연결관계를 정의할 수 있지만 어노테이션은 검색할 수 없고 특정 정보를 붙여놓을때 사용한다.
+
+용도, 시간정보 (타임스탬프), 로깅, 모니터링, 분석, 감사 정보, 디버깅 정보, 다른 요소와 관계지정, 책임자, 관리자 정보
+
+등을 넣어 놓는 용도로 사용한다. 다른 용도로도 사용할 수 있다.
+
+api를 통해 특정 container application 어노테이션 정보 기반으로 다른 처리도 가능하다.
+어떤 정보를 추가해놓고 다른 어플리케이션이 참조를 할 수 있다. (어플리케이션을 그렇게 만들어야한다)
+label 추가, 제거와 개념은 똑같다. (yaml file에 metadata로 넣을 수 있다)
+
+p65
+네임스페이스 = 오픈스택의 프로젝트(테넌트)
+현재 작업하고 있는 네임스페이스는 default
+네임스페이스에 따라 분리가 되어있다.
+
+p73
+라이브니스 프로브 : 
+프로브는 탐지하다. 확인하다라는 의미를 갖고있다. pod가 죽어있는지 살아있는지 확인한다.
+재시작 정책과 비슷한 형태, 쿠버네티스에서 pod에 재시작 정책은 항상 재시작된다.
+이미지에 저장된 어플리케이션이 오류가 발생하면 (컨테이너 자체 오류, 컨테이너 어플레이션 오류) 라이브니스 프로브는 docker container restart보다 상위의 개념(진보된 개념)
+컨테이너, 어플리케이션이 죽었는지 살았는지 체크하는 기능이다.
+
+3가지 방식이 있다.
+httpd get probe : http get 요청을 통해서 죽었는지 살았는지 확인한다. (was 자기 자신 test) docker에서는 해당되는 어플리케이션의 상태(상태코드)를 본다. 이 방식은 상태코드를 당연히 보고 어플리케이션이 작동하는지 안하는지 여부를 체크한다. // web, was는 특정 주소에 접속해서 200,300 코드를 확인한다.
+
+재시작을 한다고 해서 모든 문제가 해결 되는건 아니다.
+
+top socket probe : tcp 연결하는거랑 get 요청의 개념은 다르다. 컨텐츠가 리턴이 안되는 경우가 있을 수 있다. (web, was http 프로토콜을 사용하지 않는 경우 tcp 포트통신)
+
+Exec probe: 네트워크 통신을 안하는 경우가 있다. 특정 바이너리 실행되는지 안되는지 체크한다. 컨테이너 재시작을 해서 정상적인 상태로 만드는 구성을 한다.
+
+74p
+기존 구성에 livenessporbe를 추가
+livenessProbe: 
+  httpGet: 
+    path: /
+    port: 8080
+
+75p
+kubectl get pods -n kube-system --watch (하나만 지정할 수 있다)	//	리눅스의 watch와 다르다.
+
+78p
+레플리케이션 컨트롤러 :
+replicas : 복제본 개수, selector (pod의 라벨을 관리할것인지에 대한 설정)
+template pod의 템플릿 controller name-pod name으로 만들어진다.
+labels : app=cccr인것만 관리한다. 매칭되지 않으면 관리 대상이 아님.
+
+kubectl labe pod [pod-name] [<key>-]
+kubectl get rc/cccr = kubectl get rc cccr
+kubectl sacle rc/cccr --replicas=5 [replicas 복제본 개수를 변경할 수 있다]
+kubectl edit rc/cccr (edit이 가능하다) / error가 나면 저장이 안된다.
+kubectl replace -f [file.yml] //  수정할 때 replace를 하면 수정된 내용을 반영한다.
+
+89p
+레플리카 셋
+apps, extensions group에 속해있고, rs (약자)이다.
+최신 버전 kubectl explain replicaset --api-version=apps/v1beta2
+api version에 따라서 정의해야하는 항목이 다를 수 있다.
+
+레플리카셋은 레플리케이션 컨트롤러를 대체하기 위해서 나왔다. -> 레플리케이션 컨트롤러는 제거될 예정이다.
+레플리카셋, 레플리케이션 컨트롤러의 기능은 똑같다. (추가되는 기능이 있는데, multi label을 지원, label key선택 가능 세분화를 할 수 있다) 동작의 기능 차이는 없음
