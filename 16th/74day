@@ -1,0 +1,54 @@
+애플리케이션 사용자화 = 커스터마이징
+모든 변경 사항을 이미지화 시키기는 작업이 많아진다. 변수 하나 바뀌었는데 이미지를 다시 생성해야 한다던지
+동작을 다르게 해서 이미지를 다시 생성을 해야한다던지.. 이미지를 생성하고 레퍼지토리에 올리고 새로운 이미지로 컨테이너를 만들고 이러한 작업들.. 작업이 많아진다.
+
+컨테이너 애플리케이션 사용자화
+entrypoint, cmd (필요시 다른 커맨드 실행할 수 있다)
+
+인자 = 아규먼트
+
+환경변수 wordpress, mysql같은 특정이미지는 환경변수가 정해져있다. mysql은 password설정 등 
+이미지가 실행을 하는 entrypoint.sh 강제성 없는 규약을 따른다. 특정 변수를 받아서 이미지에 대한 정의가 쉘 스크립트로 되어있다.
+
+컨피그 맵, 시크릿 : key, value 저장소 hash 키와 값을 저장을 하는 저장소, 별도로 저장소도 존재한다.
+
+kvm virsh libvirtd(demon)을 관리하는 command, 시크릿에도 존재한다.
+시크릿맵은 key value를 암호화해서 저장한다. (민감한 내용) / 최대용량이 1mb 제한, 1mb가 넘어가면 시크릿을 넣을 수 없다.
+컨피그맵은 key value를 암호화하지 않고 최대 용량 제한을 받지 않는다.
+
+docker hub에 올라와있는 모든 이미지는 dockerfile을 이용해서 작성을 했다.
+특정 이미지가 설명이 길게 또는 짧게 적혀있다. dockerfile을 공개하는 경우도있다.
+docker inspect를 하지 않아도 보통 설명이 적혀있어서 알 수 있다.
+
+가장 중요한게 어떤 식으로 커스터마이징이 가능한가, 
+entrypoint or cmd or 둘 다
+
+컨피그맵
+cm(configmap), 간단한 설정, 설정 파일, 변수
+file의 내용은 텍스트여야한다. 바이너리를 제공하려면 volume을 사용해야 한다.
+key value 저장소 yaml파일말고 명령어로도 간단하게 만들 수 있다.
+
+시크릿
+컨피그맵과 다른점 base64로 인코딩 시킨다.
+시크릿 하나 당 1MB로 제한이 되어있다. 이 이상의 데이터를 넣으려면 컨피그맵을 사용해야한다.
+일반적으로 외부에 노출이 되면 환경변수, mysql root password (직접 지정해야하는 경우)
+pod나 컨트롤러를 정의할 때 안된다. -> 시크릿으로 등록시켜놓으면 된다.
+ssh 통신할 때 ca인증서, ssl인증서, 키를 저장하는게 일반적인 용도
+
+pod가 생성될 때마다 secret이 특정 파일에 마운트 되게 되어있다.
+토큰이라고 하는 시크릿이 전부 다 지정되어있고 마운팅 되어있다.
+토큰이라는건 인증을 받기 위한 용도다. -> 누구한테 인증받기 위함인가? -> api server
+api server는 그냥 통신할 수 없다. 각자 맞는 토큰을 가지고 있어야한다.
+따로 지정하지 않아도 default-token이 
+모든 poㅋ
+
+kubectl crate secret generic test --from-literal=key1=value1
+opaque = 형식이 없다 라는 의미
+
+모든 리소스 오브젝터는 etcd에 저장할 때 암호화 하지 않는다고 책에는 나오는데 , 현재는 모두 암호화를한다.
+
+kubectl exec etcd-minikube -n kube-system -it sh
+# ETCDCTL_API=3 etcdctl --endpoints 127.0.0.1:2379 \
+--cacert /var/lib/minikube/certs/etcd/ca.crt \
+--cert /var/lib/minikube/certs/etcd/server.crt \
+--key /var/lib/minikube/certs/etcd/server.key get / --prefix --keys-only
