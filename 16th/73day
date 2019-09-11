@@ -1,0 +1,62 @@
+kubectl get po,rs
+kubectl get po -o wide
+
+kubectl get pods cccr-emptydir-rs yaml
+kubectl discre pods cccr-emptydir-rs
+
+kubectl logs cccr-emptydir-rs -c html-generator
+
+nginx server의 주 기능
+sidecar
+
+하나는 웹 서비스를 하는 기능 하나는 웹 제너레이션 기능, 기능을 분리를 시켜서 놓는 형태
+
+모든 컨테이너는 로그를 수집해서 저장을 해야한다. -> elk가 하는 역할
+ -> 수집 도구가 필요하다. container에 pods를 기능 확장을 위해서 붙인다.
+
+무조건 파드를 만들면 통신하기 위한 pose
+네트워크 기능을 분리 시킨다. 컨테이너를 만들면 pose가 붙게 된다
+
+sidecar patten
+
+서로 겹치지 않게 분히 시켜준다.
+
+hostpath :
+파드가 서로 다른 노드에 있는 경우에 데이터를 공유할 수 없다.
+
+컨테이너에 있는 모든 로그를 실제로 컨테이너 로그를 로컬에 있는 호스트에 저장을 해야한다.
+필요한 컨테이너들이 호스트의 특정 var밑에 디렉토리를 마운트해서 쓸 수 있다.
+컨테이너를 지워도 호스트에 로그가 남기 때문에 로그가 지워지더라도 호스트에 남는다. 
+문제, 추적에 사용할 수 없다. -> 기업에선 문제가 된다. 로그를 따로 지정할 위치가 필요하다.
+다른 호스트와 공유할 필요없이 로그를 저장하는 형태.
+
+볼륨 마운트는 다 똑같다. 어떤 스토리지든 똑같이 정의하면 된다.
+volumes 속성만 잘 지정하면 된다.
+hostpath는 type과 path가 있어야한다. DiretoryOrCreate (없으면 만들어줌)
+diretory(두 번째 디렉토리는 없으면 오류가 난다), FileOrCreate (없으면 만들어줌)
+디렉토리를 file로 Mount 할 수 있다. ios image file을 file로 mount 할 수 있다. (특정 파일에 마운트 할 수 있다)
+socker, blackdevice, chardeive등으로도 만들 수 있다.
+
+kubectl explan pods.volumes <<
+path(root 부터 시작한 경로), readOnly, server(ip) 이걸 이용해서 replicaset으로 서로 데이터 공유가 되는지 확인
+
+kubectl explain pod.spec.volumes.iscsi
+
+file io (iscsi, 3260 주소) / firewall
+fsType << (file type)
+iqn: (target iqn 주소)
+lun - 0
+targetPortal (nat network)
+initiatorname (iqn / server)
+
+minikube는 패키지 설치가 안되서 안됨 !
+연결은 호스트가 / iscsi install | worker node iscsi-insiati
+
+container (host에 있는) - iscsi, nfs 만들 수 있다.
+
+쿠버네티스에서는 파드를 만들 때 pv와 pvc를 만들었다.
+기능을 분리 시켜놨다. 외부용 스토리지가 있고 관리자는 스토리지를 연결해주는 쿠버네티스 리소스 pv(PersistentVolume) 
+개발자는 pvc(persistentVolumeClaim)와 파드를 연결해서 사용한다.
+
+pv를 claim = 요청, pvc는 스토리지를 요청하는거다.
+
