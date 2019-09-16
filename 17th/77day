@@ -1,0 +1,76 @@
+Docker
+ - registry
+ - swarm
+
+swarm : docker cluster (다수의 도커 호스트를 가지고 도커 클러스트를 묶는 것)
+docker swarm은 docker command로 사용한다.
+docker swarm은 docker에서 만들었다.
+
+docker swarm으로 docker cluster를 구성할 수 있다. (규모가 작으면 관리하기 편해서 쓰기 좋다) / 대규모는 힘들다.
+
+awx : playbook을 실행할 때 그래픽으로 실행하는것 -> 대시보드
+ 단점 : 타워는 보통 엔지니어 대상으로 만들어진 솔루션이 아니다. 오퍼레이터 대상으로 만들어짐.
+
+RDP 3389 (SSH가 아님) 윈도우에서 사용하는 원격접속
+
+레플리케이션 : 
+controller
+
+쿠버네티스는 컨트롤러가 너무 많다. / node가 아니라 기능, 서비스, 오브젝트
+롤링 업데이트
+
+fork : 작업 당 호스트 수
+serial : play 당 호스트 수
+
+오픈스택, 아마존의 로드밸런스
+
+LB
+	VM(WEB)
+	VM(WEB)
+	VM(WEB)
+kubernetes에선 pods로 만들고 volume을 연결.
+다 다운 시키고 다시 올리는 방법, 중단하지 않는 상태에서 바꾸는 방법이 있다.
+무중단 업데이트 -> 롤링 업데이트
+
+kubernetes에서도 마찬가지이다.
+
+Blue, Green
+어플리케이션을 올릴 때 블루, 그린이 있다. 레플리카셋이라고 봐도 무관하다.
+서비스가 중단이 되면 안된다.
+여러 개의 노드를 중단없이 업데이트를 하는 것 -> 하나의 모델이 blue, green이 있다.
+
+처음에 어플리케이션을 배포할 때 두 형태로 배포한다.
+처음에 blue(service)에 배포, 그 다음에 green에 업데이트를 올리고 교체하는 형식
+
+command 
+kubectl rolling-update => deprecated(사라질 예정)
+rollout => deployment controller (자동으로 레플리카셋을 만들어준다)
+
+watch -n 1 -d '[command}'
+-d 옵션 : 바뀌는 것만 보여준다.
+
+blue, green은
+조대협 (블로그 참조하면 좋음)
+
+카나리 : 롤링 업데이트 방식 (광부들이 광산에 들어가기전에 유독가스를 마시지 않기 위해 카나리라는 생물을 넣음)
+업데이트 된 녀석을 배포 (소수만) -> 잘 동작 시 다 바꾸는 형태
+
+svc가 있고 레플리카셋을 관리할 애가 deplayment가 관리한다.
+오브젝트를 만들면 자동으로 레플리카셋이 만들어진다.
+
+스테이트풀셋 = controller
+pxe
+
+다수의 하드웨어가 하나의 서비스인거 처럼 만드는 것 고 가숑성 
+ha 구성을 해야하는게 keystone, rabbitmq
+
+다수의 서버가 하나의 서버가 처리하는거 처럼 보이도록 하는 서비스 (병렬 프로세싱)
+고가용성을 유지하기 위해 동시 작동하는 서버들의 집합
+
+Rabbitmq 오픈 소스 메시지 브로커
+
+minikube addons list
+default-storagecalss: enable
+storage-provissioner-gluster disable
+
+kubectl get storageclasses.storage.k8s.io
