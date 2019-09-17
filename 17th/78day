@@ -1,0 +1,85 @@
+swarm은 manager도 일을한다.
+manager는 contianer도 올리고 cluster도 관리해야한다. (통신 가능한 이름으로 넣어야함)
+
+docker-version
+nightly 밤마다 소스 버전이 빌드된다. (도커의 기능이 바뀔 수 있다)
+test는 매일마다는 아니지만 테스트용, 상위버전의 기능을 미리 체험 해볼 수 있다.
+
+Docker 레지스트리
+docker-hub -> 인터넷이 되야한다.
+인터넷이 안되는 환경에서 도커를 쓸 수 있을까? -> 실제로 운영하는 환경은 인터넷이 안되는 폐쇄망일수있다. (인터넷 안되는 환경)
+미디어 장치를 들고가서 파일 옮기거나 커널을 업데이하는 작업을 한다.
+docker host어딘가에 이미지가 저장되어있어야한다.
+
+docker save (외부에서 받아서 갖고 올 수 있다  
+멀티호스트 = 클러스터링 (docker cluster) <<
+
+a	b
+<- image 를 갖고와서 쓸 수 없다.
+
+private 저장소를 만들 수 있다 = 갖고와서 쓸 수 있다.
+
+a	<-	regi image	-> b
+-> image
+
+hubId/repo이름:tag
+hubID, 서버주소로 바뀌어야한다. (container 주소) / 서버주소:포트/repo이름:tag
+
+폐쇄망에서 도커허브를 연결할 수 없을 때 사용할 수 있는 이미지를 다 갖고와서 레지스트리를 구성하고 밀어넣어서 다운로드 받고 이미지 dockerfile로 이미지를 만든다.
+
+dockfile을 통해 이미지를 만들 수 있다. -> 그래서 베이스이미지인 경우가 많다.
+커스터마이징을 해야한다. 패키지, 패키지 저장소 다 외부로 연결되어있다. (수정이 필요함)
+
+hub.docker (registry)
+--restart always (시스템이 꺼져도 부팅할 때 켜준다)
+docker run -d -p 5000:5000 --restart always --name registry 
+
+tag는 링크랑 비슷하다. (리눅스에서) 하드링크, 심볼릭링크
+image라는 이름은 껍데기 -> layer들이 어떤 디렉토리에 모여있지만 파악하기 쉽지않다.
+image id로 구별한다.
+
+sudo docker tag httpd:latest localhost:5000/cccr:httpd
+sudo docker tag alpine:latest localhost:5000/cccr:alpine
+
+sudo docker push localhost:5000/cccr:httpd (푸쉬)
+sudo docker push alpine:5000/cccr:alpine
+
+docker rmi httpd alpine localhost:5000/cccr:httpd
+docker rmi httpd alpine localhost:5000/cccr:alpine
+docker pull localhost:5000/cccr:httpd
+docker pull localhost:5000/cccr:alpine
+
+docker2를 폐쇄망이라고 생각하고 땡겨오거나 받을 수 있음 (sudo docker pull 192.168.122.101:5000/cccr:alpine)
+도커 레지스트리를 원격에서 받아오려면 http가 필요 (인증서가 필요하다) / http로 접근 가능하게 만들예정
+폐쇄망에서 http 통신을 볼 수 있나...
+원격지에서 레지스트리를 받아올 수 있게 설정.
+docker registry inscure <<  (설정파일에  vi /etc/docker/daemon.json) / 내용 추가 + 서버 주소 추가
+systemctl restart docker 재시작을 해야한다. -> pull 다운로드가 된다.
+레지스트리에 어떤 이미지가 있는지 어떻게 알 수 있는지? -> 확인할 수 있는 기능이 없다. (노가다 해야한다)
+프로그램을 개발을 하면된다.
+
+vaygrront ?? : 가상머신 쉽게 만들어주는거 (clone하면된다) 굳이 할 필요가 없다.
+openstack image -> sudo password가 없다. (instance들 끼리 통시할 때 ssh키만 있으면된다)
+sudo password 설정할 필요가 없다. | ansible 초기 구성 시 
+1. UID가 동일한 사용자를 만든다.
+2. sudo no password 사용자 만든다.
+3. 키기반인증 (ssh keygen, ssh-copy-id)
+
+docker save --help
+docker load --help
+
+save
+-o 옵션을 반드시 써야한다. / 파일을 다 찾아서 해야한다. 의미가 없다. (찾아가서 모든 파일을 복사해서 다른 호스트에 붙여넣어야함) -> 멍청한 짓 = docker save 를 해서 아카이브 tar 확장자
+
+docker save -o abc.tar (POSIX tar archive)
+tar tf abc.tar
+
+load
+-i 옵션을 사용해서 파일을 해제
+
+Docker는 LXC과 다르다.
+다른점 : 도커를 해킹한다. (도커는 도구일 뿐이다 / 엔진이자 도구)
+도커가 컨테이너가 아니다. 리눅스 컨테이너를 다루는 도구일뿐이다. (컨테이너 엔진 또는 런타임 컨테이너를 검색하면 나온다)
+
+docker ps
+scp abc.tar 192.168.122.101:/root
