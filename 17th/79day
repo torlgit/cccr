@@ -1,0 +1,179 @@
+docker cluster
+- k8s
+- swarm
+- swarm mode (docker에서 사용)
+
+kubernetes 처럼 각 node에 구성한다. / docker cluster을 통일 시켜서 안 쓴다.
+
+public cloud의 경쟁력은 얼마나 kubernetes을 빠르게 깔 수 있나... -> GCP (google cloud platform)
+GCP는 개발자에 친화적이다. 개발자들이 인프라를 쉽게 접근하기 위해 만들었다.
+
+RHEL :
+구독권 구매, yum repository gpg key를 준다. / 레퍼지토리 접근하기 까다롭다. / 보통 공공기관에서 사용한다.
+기술적인 모든 책임을 Red Hat이 진다.
+
+Centos :
+BUG 발생 시 스스로 커뮤니티를 보고 해결해야한다.
+
+목표 ansible로 docker swarm을 관리
+
+swarm mode는 대규모 환경에서는 별로 좋지않다. (서비스가 간단하고 규모가 작으면 쓰기 좋다 단순함)
+규모가 커질수록 kubernetes의 장점이 커진다. 관리하는 머신이 많아질수록 이점이 생긴다.
+
+규모가 크고 작은거의 차이.
+규모가 커지면 네트워크 성능을 고려해야한다.
+
+도커 버전에서는 스웜이 기본적으로 포함되어있다. (스웜 = 영역) loadbalancer pool처럼 host를 배치한다.
+node = server ? (desktop) 하나의 system을 node 라고한다.
+가상 머신을 node라고 하는 경우도 있다. 물리적인 컴퓨터를 node 라고한다.
+
+docker 1,2 manager docker 3,4 worker
+kubernetes는 worker에만 container가 만들어지는데 swarm에서는 manager에서도 container가 만들어진다.
+
+cluster (H.A) / 고가용성을 가능하게 하는게 cluster
+다수의 pod가 하나의 service인거처럼 만들어주는것
+
+docker, 일반 온프레미스 환경에서도 있다.
+swarm을 통해 고가용성을 제공해준다.
+
+ovirt openstack 혹은 public cloud가 강점이기 때문에 사용하지 않는다. / 클러스터
+ovirt 클러스터는 마이그레이션의 범위이다.
+
+swarm = cluster
+D.H(M) D.H(M) D.H(W) D.H(W) / manager2, worker2
+
+이미지를 지정해서 container를 만들듯이 만든다. 레플리카셋처럼 이미지를 지정하고 복제본을 지정한다.
+스케일인, 스케일아웃이 가능하다. (scaling) swarm을 하나 만들면 network가 만들어진다.
+multi host networking // docker network를 만들면 이름으로 통신이 가능하다.
+docker swarm도 rolling update 가능하다.
+
+쿼럼 (quorum)
+
+docker network
+driver (bridge host null overlay)
+
+openstack endpoint 목록을 catalog라고 한다. (public, admin internal) 퍼블릭용, 인터널용
+
+모든 node에서 방화벽을 열어야한다. (port만 열면 안된다)
+
+doc.docker 참고
+
+docker node ls
+docker node inspect [] / (tokken)
+
+docker service create -d --name web -p 80:80 httpd | (volume만들어서 공유 share 할 수 있다)
+
+docker service ls
+docker service ps web
+docker service scale --help
+
+web -> loadbalancer -> docker host 배치
+docker swarm join-token manager
+docker swarm join-token worker
+
+docker swarm - playbook create
+tokken 정보
+
+매직변수
+debug 모듈 굉장히 중요하다.
+
+awx (ansible tower / Red Hat) | awx = open source, ansible tower = enterprise
+manual대로 입력을 한다. / 커맨드를 입력하는걸 거부감이 들 수 있다.
+container로 올릴 수 있다. ceph, glusterfs (ansible) 설정 파일을 동기화 
+kolla-ansible, kubespray / 프로젝트는 플레이북이 들어가는 저장소 (git 연결하면 tower로 올리면된다)
+
+awx credentials 
+ansible controll node가 동일한 이름을 가진 사용자로 접근한다.
+사용자가 다르면 username에 대한 사용자를 찾는다. (worker templat)
+
+예제 (play-book)
+1. Docker Swarm firewall open
+
+2. Create the docker swarm
+
+3. Add the Manager
+
+4. Add the Worker
+
+5. Create the service
+
+6. Scale the Service
+
+
+** playbook tip **
+all node : yum -y install epel-release
+	   yum -y install python2-pip
+           pip install docker
+
+* module *
+docker_swarm
+docker_swarm_info
+
+yum:
+  name: "{{ item }}"
+loop:
+  - 1
+  - 2
+
+---
+- name: Pre-setting
+  hosts: all
+  become: true
+  gather_facts: no
+  tasks:
+  - name: open docker-swarm service
+    firewalld:
+      immediate: true
+      permanent: yes
+      service: docker-swarm
+      state: enabled
+  - name: install the pip
+    yum:
+      name: "{{ item }}"
+    loop:
+      - epel-release
+      - python2-pip
+
+  - name: pip install docker
+    pip:
+      name: docker
+
+- name: Create Swarm
+  hosts: manager
+  become: true
+  tasks:
+  - name: docker swarm init
+    docker_swarm:
+      advertise_addr: "{{ ansible_facts.default_ipv4.address }}"
+    when: inventory_hostname == "docker-1"
+
+  - name: inspect swarm
+    docker_swarm_info:
+    register: swarm_info
+    when: inventory_hostname != "docker-1"
+    delegate_to: docker-1
+    ignore_errors: yes
+
+  - name: join the manager
+    docker_swarm:
+      join_token: "{{ swarm_info.swarm_facts.JoinTokens.Manager }}"
+      advertise_addr: "{{ ansible_facts.default_ipv4.address }}"
+      remote_addrs: [ '10.0.0.101:2377' ]   #10.0.0.101: docker-1
+      state: join
+    when: inventory_hostname != "docker-1"
+    
+- name: Worker
+  hosts: worker
+  become: true
+  tasks:
+  - name: inspect swarm
+    docker_swarm_info:
+    register: swarm_info
+    delegate_to: docker-1
+
+  - name: join the worker
+    docker_swarm:
+      join_token: "{{ swarm_info.swarm_facts.JoinTokens.Worker }}"
+      advertise_addr: "{{ ansible_facts.default_ipv4.address }}"
+      remote_addrs: [ '10.0.0.101:2377' ]  #10.0.0.101: docker-1
+      state: join
